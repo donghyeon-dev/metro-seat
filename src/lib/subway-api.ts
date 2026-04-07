@@ -105,7 +105,8 @@ export async function fetchArrivals(stationName: string): Promise<ArrivalInfo[]>
 export async function getArrivals(stationName: string): Promise<ArrivalInfo[]> {
   const res = await fetch(`/api/subway/arrivals?station=${encodeURIComponent(stationName)}`);
   if (!res.ok) {
-    throw new Error('Failed to fetch arrival info');
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `서버 오류 (${res.status})`);
   }
   return res.json();
 }

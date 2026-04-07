@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[subway/arrivals] Error:', message, error);
 
     return NextResponse.json(
       { error: message },
