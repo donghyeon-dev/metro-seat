@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchArrivals } from '@/lib/subway-api';
 
+// Vercel 서버리스 함수를 한국/일본 리전에서 실행 (서울시 API 접근용)
+export const runtime = 'nodejs';
+export const preferredRegion = ['icn1', 'hnd1'];
+
 export async function GET(request: NextRequest) {
   const station = request.nextUrl.searchParams.get('station');
 
@@ -21,40 +25,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
 
-    // API 키 미설정 시 mock 데이터 반환 (개발용)
-    if (message.includes('SEOUL_API_KEY')) {
-      return NextResponse.json(getMockArrivals(station));
-    }
-
     return NextResponse.json(
       { error: message },
       { status: 500 }
     );
   }
-}
-
-// 개발용 Mock 데이터
-function getMockArrivals(stationName: string) {
-  const now = new Date();
-  const mockTrains = [
-    { dest: '신도림', dir: 'up' as const, min: 2, trainNo: '2315' },
-    { dest: '성수', dir: 'down' as const, min: 5, trainNo: '2042' },
-    { dest: '까치산', dir: 'up' as const, min: 8, trainNo: '2117' },
-    { dest: '잠실', dir: 'down' as const, min: 12, trainNo: '2244' },
-  ];
-
-  return mockTrains.map((t, i) => ({
-    subwayId: '1002',
-    statnNm: stationName,
-    trainLineNm: `${t.dest}행 - ${stationName}`,
-    bstatnNm: t.dest,
-    arvlMsg2: `${t.min}분 후 도착`,
-    arvlMsg3: `전역 출발`,
-    arvlCd: '1',
-    updnLine: t.dir,
-    btrainNo: t.trainNo,
-    recptnDt: now.toISOString(),
-    btrainSttus: '0',
-    ordkey: `0${i}`,
-  }));
 }

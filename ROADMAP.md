@@ -19,14 +19,14 @@
 ## Phase 2: 실서비스 준비 (다음 단계)
 
 ### 2-1. 인프라 셋업
-- [ ] Supabase 프로젝트 생성 및 `.env.local` 설정
-- [ ] DB 마이그레이션 실행 (`001_initial.sql`)
-- [ ] 서울 열린데이터 광장 API 키 발급 (`SEOUL_API_KEY`)
-- [ ] Vercel 또는 기타 호스팅 배포
+- [x] Supabase 프로젝트 생성 및 `.env.local` 설정
+- [x] DB 마이그레이션 실행 (`001_initial.sql`)
+- [x] 서울 열린데이터 광장 API 키 발급 (`SEOUL_API_KEY`)
+- [x] Vercel 또는 기타 호스팅 배포
 - [ ] 커스텀 도메인 연결
 
 ### 2-2. 실제 API 연결 및 검증
-- [ ] Mock 데이터 제거, 서울 지하철 API 실 연동 테스트
+- [x] Mock 데이터 제거, 서울 지하철 API 실 연동 테스트
 - [ ] API 응답 필드 매핑 검증 (`btrainNo`, `updnLine`, `bstatnNm` 등)
 - [ ] 에러 핸들링 강화 (API 다운, 심야시간, 네트워크 오류)
 - [ ] API 호출 rate limit 대응 (캐싱 전략)
@@ -38,9 +38,9 @@
 - [ ] 6호선 등 차량 편성 수가 다른 노선 처리 (8량 등)
 
 ### 2-4. Supabase → 실제 데이터 연동
-- [ ] `provide` 플로우에서 Supabase `seat_offers` INSERT 연결
-- [ ] `seek` 플로우에서 실제 `seat_offers` 데이터 조회 (Mock 제거)
-- [ ] `seat_requests` 생성/업데이트 연결
+- [x] `provide` 플로우에서 Supabase `seat_offers` INSERT 연결
+- [x] `seek` 플로우에서 실제 `seat_offers` 데이터 조회 (Mock 제거)
+- [x] `seat_requests` 생성/업데이트 연결
 - [ ] Realtime 구독 실 테스트 (2개 브라우저 탭 동시 테스트)
 
 ---

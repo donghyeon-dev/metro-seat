@@ -8,6 +8,7 @@ import ArrivalInfo from '@/components/ArrivalInfo';
 import SeatMap from '@/components/SeatMap';
 import { useArrivalInfo } from '@/hooks/useArrivalInfo';
 import { getStationsByLine } from '@/data/stations';
+import { createClient } from '@/lib/supabase/client';
 import type { LineNumber, CarType, Station, ArrivalInfo as ArrivalInfoType, SeatPosition, Direction } from '@/types';
 
 type Step = 'line' | 'station' | 'train' | 'carType' | 'seat' | 'exit' | 'confirm';
@@ -25,6 +26,8 @@ export default function ProvidePage() {
   const [exitStation, setExitStation] = useState<Station | null>(null);
   const [trainNumber, setTrainNumber] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { arrivals, loading, error } = useArrivalInfo({
     stationName: step === 'train' ? currentStation?.name ?? null : null,
@@ -60,9 +63,47 @@ export default function ProvidePage() {
     setSubmitted(false);
   }
 
-  function handleSubmit() {
-    // TODO: Supabase에 seat_offer 등록
-    setSubmitted(true);
+  async function handleSubmit() {
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setSubmitError('로그인이 필요합니다');
+        setSubmitting(false);
+        return;
+      }
+
+      const templateId = `line${lineNumber}-${carType}`;
+      const direction: Direction = selectedTrain?.updnLine ?? 'up';
+
+      const { error: insertError } = await supabase.from('seat_offers').insert({
+        provider_id: user.id,
+        line_number: lineNumber,
+        direction,
+        train_destination: selectedTrain?.bstatnNm ?? '',
+        train_number: trainNumber || selectedTrain?.btrainNo || null,
+        car_number: selectedCar,
+        seat_id: selectedSeat!.id,
+        template_id: templateId,
+        exit_station: exitStation!.name,
+        exit_station_code: exitStation!.code,
+        boarding_station: currentStation!.name,
+        status: 'available',
+      });
+
+      if (insertError) throw insertError;
+
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Failed to create seat offer:', err);
+      setSubmitError('등록에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (submitted) {
@@ -209,6 +250,14 @@ export default function ProvidePage() {
               </button>
             </div>
           </div>
+
+          {/* 건너뛰기 */}
+          <button
+            onClick={goNext}
+            className="w-full mt-3 py-2 text-sm text-gray-400 hover:text-gray-600"
+          >
+            열차 정보 없이 진행하기
+          </button>
         </div>
       )}
 
@@ -304,11 +353,16 @@ export default function ProvidePage() {
             <InfoRow label="하차역" value={exitStation?.name ?? '-'} />
           </div>
 
+          {submitError && (
+            <p className="mt-4 text-sm text-red-600 text-center">{submitError}</p>
+          )}
+
           <button
             onClick={handleSubmit}
-            className="w-full mt-6 py-3 bg-blue-600 text-white rounded-xl font-semibold active:bg-blue-700 transition-colors"
+            disabled={submitting}
+            className="w-full mt-6 py-3 bg-blue-600 text-white rounded-xl font-semibold active:bg-blue-700 transition-colors disabled:bg-gray-300"
           >
-            자리 등록하기
+            {submitting ? '등록 중...' : '자리 등록하기'}
           </button>
         </div>
       )}

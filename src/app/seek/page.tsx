@@ -6,6 +6,8 @@ import ArrivalInfo from '@/components/ArrivalInfo';
 import SeatMap from '@/components/SeatMap';
 import CarTypeSelector from '@/components/CarTypeSelector';
 import { useArrivalInfo } from '@/hooks/useArrivalInfo';
+import { useRealtimeOffers } from '@/hooks/useRealtimeOffers';
+import { createClient } from '@/lib/supabase/client';
 import type { Station, ArrivalInfo as ArrivalInfoType, LineNumber, CarType, SeatPosition } from '@/types';
 import { type SeatStatus } from '@/components/TrainCar';
 
@@ -19,19 +21,35 @@ export default function SeekPage() {
   const [carType, setCarType] = useState<CarType | null>(null);
   const [requestedSeat, setRequestedSeat] = useState<{ car: number; seat: SeatPosition } | null>(null);
   const [requestSent, setRequestSent] = useState(false);
+  const [requestingOffer, setRequestingOffer] = useState(false);
 
   const { arrivals, loading, error, refresh } = useArrivalInfo({
     stationName: step === 'arrivals' ? fromStation?.name ?? null : null,
   });
 
-  // Mock: 임시 좌석 상태 (실제로는 Supabase에서 가져옴)
-  const mockSeatStatuses: Record<number, Record<string, SeatStatus>> = {
-    3: { 'S1-L3': 'available', 'S2-R5': 'available' },
-    5: { 'S0-L2': 'available', 'S3-L4': 'available', 'S3-R2': 'reserved' },
-    7: { 'S2-L1': 'available' },
-  };
-
   const lineNumber = fromStation?.lineNumber as LineNumber | undefined;
+
+  // 실제 Supabase에서 좌석 제공 데이터 조회
+  const { offers } = useRealtimeOffers({
+    lineNumber,
+    direction: selectedTrain?.updnLine,
+    trainDestination: selectedTrain?.bstatnNm,
+    enabled: step === 'seats' && !!selectedTrain && !!lineNumber,
+  });
+
+  // offers를 SeatMap이 사용하는 carSeatStatuses 형태로 변환
+  const seatStatuses: Record<number, Record<string, SeatStatus>> = {};
+  for (const offer of offers) {
+    if (!seatStatuses[offer.car_number]) {
+      seatStatuses[offer.car_number] = {};
+    }
+    seatStatuses[offer.car_number][offer.seat_id] = offer.status === 'available' ? 'available' : 'reserved';
+  }
+
+  // 선택한 좌석에 해당하는 offer 찾기
+  function findOffer(carNum: number, seatId: string) {
+    return offers.find((o) => o.car_number === carNum && o.seat_id === seatId);
+  }
 
   return (
     <div className="px-4 pt-6 pb-4">
@@ -169,9 +187,9 @@ export default function SeekPage() {
               <SeatMap
                 lineNumber={lineNumber}
                 carType={carType}
-                carSeatStatuses={mockSeatStatuses}
+                carSeatStatuses={seatStatuses}
                 onSeatSelect={(carNum, seat) => {
-                  const status = mockSeatStatuses[carNum]?.[seat.id];
+                  const status = seatStatuses[carNum]?.[seat.id];
                   if (status === 'available') {
                     setRequestedSeat({ car: carNum, seat });
                   }
@@ -196,13 +214,34 @@ export default function SeekPage() {
                       취소
                     </button>
                     <button
-                      onClick={() => {
-                        // TODO: Supabase에 seat_request 생성
-                        setRequestSent(true);
+                      onClick={async () => {
+                        setRequestingOffer(true);
+                        try {
+                          const supabase = createClient();
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (!user) return;
+
+                          const offer = findOffer(requestedSeat!.car, requestedSeat!.seat.id);
+                          if (!offer) return;
+
+                          const { error: insertError } = await supabase.from('seat_requests').insert({
+                            offer_id: offer.id,
+                            seeker_id: user.id,
+                            status: 'pending',
+                          });
+
+                          if (insertError) throw insertError;
+                          setRequestSent(true);
+                        } catch (err) {
+                          console.error('Failed to create seat request:', err);
+                        } finally {
+                          setRequestingOffer(false);
+                        }
                       }}
-                      className="flex-1 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold active:bg-green-700"
+                      disabled={requestingOffer}
+                      className="flex-1 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold active:bg-green-700 disabled:bg-gray-300"
                     >
-                      좌석 요청
+                      {requestingOffer ? '요청 중...' : '좌석 요청'}
                     </button>
                   </div>
                 </div>

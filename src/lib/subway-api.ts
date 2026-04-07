@@ -62,7 +62,24 @@ export async function fetchArrivals(stationName: string): Promise<ArrivalInfo[]>
 
   const url = `${SEOUL_API_BASE}/${apiKey}/json/realtimeStationArrival/0/30/${encodeURIComponent(stationName)}`;
 
-  const res = await fetch(url, { next: { revalidate: 30 } });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      next: { revalidate: 30 },
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('서울 지하철 API 응답 시간 초과');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+
   if (!res.ok) {
     throw new Error(`Seoul API returned ${res.status}`);
   }
