@@ -43,15 +43,21 @@ export async function GET(request: NextRequest) {
     const data = await res.json();
 
     if (data.errorMessage) {
-      if (data.errorMessage.code === 'INFO-200') {
+      const code = data.errorMessage.code;
+      // INFO-000: 정상 처리 (성공)
+      if (code === 'INFO-000') {
+        // 성공 — 아래에서 realtimeArrivalList 처리
+      } else if (code === 'INFO-200') {
+        // 데이터 없음 (심야 등)
         return NextResponse.json([], {
           headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
         });
+      } else {
+        return NextResponse.json(
+          { error: data.errorMessage.message },
+          { status: 502 }
+        );
       }
-      return NextResponse.json(
-        { error: data.errorMessage.message },
-        { status: 502 }
-      );
     }
 
     const arrivals: ArrivalInfo[] = (data.realtimeArrivalList ?? []).map(parseArrivalInfo);
