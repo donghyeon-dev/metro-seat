@@ -1,0 +1,22 @@
+{
+  "name": "메트로시트 - 지하철 좌석 공유",
+  "short_name": "메트로시트",
+  "description": "지하철 빈자리를 미리 확인하고 예약하세요",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0052A4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
