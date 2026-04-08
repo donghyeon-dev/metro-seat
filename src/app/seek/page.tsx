@@ -25,6 +25,7 @@ export default function SeekPage() {
 
   const { arrivals, loading, error, refresh } = useArrivalInfo({
     stationName: step === 'arrivals' ? fromStation?.name ?? null : null,
+    lineNumber: fromStation?.lineNumber,
   });
 
   const lineNumber = fromStation?.lineNumber as LineNumber | undefined;

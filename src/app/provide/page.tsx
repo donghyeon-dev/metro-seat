@@ -31,6 +31,7 @@ export default function ProvidePage() {
 
   const { arrivals, loading, error } = useArrivalInfo({
     stationName: step === 'train' ? currentStation?.name ?? null : null,
+    lineNumber,
   });
 
   const stepIndex = STEP_ORDER.indexOf(step);
