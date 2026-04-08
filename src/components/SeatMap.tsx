@@ -15,6 +15,8 @@ interface SeatMapProps {
   carSeatStatuses?: Record<number, Record<string, SeatStatus>>;
   /** 좌석 선택 핸들러 */
   onSeatSelect?: (carNumber: number, seat: SeatPosition) => void;
+  /** 호차 변경 핸들러 */
+  onCarChange?: (carNumber: number) => void;
   /** 선택된 칸 번호 */
   selectedCar?: number | null;
   /** 선택된 좌석 ID */
@@ -29,6 +31,7 @@ export default function SeatMap({
   totalCars = 10,
   carSeatStatuses = {},
   onSeatSelect,
+  onCarChange,
   selectedCar: controlledCar,
   selectedSeatId,
   readOnly = false,
@@ -60,7 +63,10 @@ export default function SeatMap({
             return (
               <button
                 key={num}
-                onClick={() => setInternalCar(num)}
+                onClick={() => {
+                  setInternalCar(num);
+                  onCarChange?.(num);
+                }}
                 className={`flex-shrink-0 w-10 h-10 rounded-lg text-sm font-semibold transition-all ${
                   isSelected
                     ? 'text-white shadow-md scale-110'

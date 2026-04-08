@@ -8,15 +8,10 @@ export type SeatStatus = 'empty' | 'available' | 'reserved' | 'mine' | 'priority
 
 interface TrainCarProps {
   template: SeatTemplate;
-  /** 좌석별 상태 맵 (seat.id -> status) */
   seatStatuses?: Record<string, SeatStatus>;
-  /** 선택된 좌석 ID */
   selectedSeatId?: string | null;
-  /** 좌석 클릭 핸들러 */
   onSeatClick?: (seat: SeatPosition) => void;
-  /** 읽기 전용 모드 */
   readOnly?: boolean;
-  /** 칸 번호 표시 */
   carNumber?: number;
 }
 
@@ -54,7 +49,7 @@ export default function TrainCar({
       <svg
         viewBox={`0 0 ${carWidth} ${carHeight}`}
         className="w-full h-auto"
-        style={{ maxHeight: '160px' }}
+        style={{ maxHeight: '180px' }}
       >
         {/* 차량 외곽 */}
         <rect
@@ -62,93 +57,104 @@ export default function TrainCar({
           y={2}
           width={carWidth - 4}
           height={carHeight - 4}
-          rx={12}
-          ry={12}
+          rx={14}
+          ry={14}
           fill="#F8FAFC"
           stroke="#CBD5E1"
           strokeWidth={2}
         />
 
-        {/* 문 */}
+        {/* 문 (위/아래 양쪽) */}
         {doors.map((door) => (
           <g key={door.id}>
-            {/* 위쪽 문 */}
             <rect
               x={door.x}
               y={2}
               width={door.width}
-              height={12}
+              height={10}
               fill="#94A3B8"
               rx={2}
             />
-            {/* 아래쪽 문 */}
             <rect
               x={door.x}
-              y={carHeight - 14}
+              y={carHeight - 12}
               width={door.width}
-              height={12}
+              height={10}
               fill="#94A3B8"
               rx={2}
             />
+            {/* 문 번호 */}
+            <text
+              x={door.x + door.width / 2}
+              y={carHeight / 2}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={7}
+              fill="#CBD5E1"
+            >
+              {door.id}
+            </text>
           </g>
         ))}
 
-        {/* 중앙 통로 표시 */}
+        {/* 중앙 통로 */}
         <line
-          x1={10}
+          x1={14}
           y1={carHeight / 2}
-          x2={carWidth - 10}
+          x2={carWidth - 14}
           y2={carHeight / 2}
           stroke="#E2E8F0"
           strokeWidth={1}
-          strokeDasharray="4 4"
+          strokeDasharray="6 4"
         />
 
         {/* 좌석 */}
-        {seats.map((seat) => (
-          <g
-            key={seat.id}
-            onClick={() => !readOnly && onSeatClick?.(seat)}
-            className={!readOnly ? 'cursor-pointer' : ''}
-            role={!readOnly ? 'button' : undefined}
-            tabIndex={!readOnly ? 0 : undefined}
-          >
-            <rect
-              x={seat.x}
-              y={seat.y}
-              width={SEAT_SIZE}
-              height={SEAT_SIZE}
-              rx={3}
-              fill={getSeatColor(seat)}
-              stroke={getSeatStroke(seat)}
-              strokeWidth={selectedSeatId === seat.id ? 2 : 1}
-            />
-            {/* 좌석 상태 아이콘 */}
-            {seatStatuses[seat.id] === 'available' && (
-              <circle
-                cx={seat.x + SEAT_SIZE / 2}
-                cy={seat.y + SEAT_SIZE / 2}
-                r={3}
-                fill="white"
+        {seats.map((seat) => {
+          const isSelected = selectedSeatId === seat.id;
+          return (
+            <g
+              key={seat.id}
+              onClick={() => !readOnly && onSeatClick?.(seat)}
+              className={!readOnly ? 'cursor-pointer' : ''}
+              role={!readOnly ? 'button' : undefined}
+              tabIndex={!readOnly ? 0 : undefined}
+            >
+              <rect
+                x={seat.x}
+                y={seat.y}
+                width={SEAT_SIZE}
+                height={SEAT_SIZE}
+                rx={2}
+                fill={getSeatColor(seat)}
+                stroke={getSeatStroke(seat)}
+                strokeWidth={isSelected ? 2 : 1}
               />
-            )}
-            {seatStatuses[seat.id] === 'reserved' && (
-              <text
-                x={seat.x + SEAT_SIZE / 2}
-                y={seat.y + SEAT_SIZE / 2 + 1}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize={8}
-                fill="white"
-                fontWeight="bold"
-              >
-                !
-              </text>
-            )}
-          </g>
-        ))}
+              {seatStatuses[seat.id] === 'available' && (
+                <circle
+                  cx={seat.x + SEAT_SIZE / 2}
+                  cy={seat.y + SEAT_SIZE / 2}
+                  r={3}
+                  fill="white"
+                />
+              )}
+              {seatStatuses[seat.id] === 'reserved' && (
+                <text
+                  x={seat.x + SEAT_SIZE / 2}
+                  y={seat.y + SEAT_SIZE / 2 + 1}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={8}
+                  fill="white"
+                  fontWeight="bold"
+                >
+                  !
+                </text>
+              )}
+            </g>
+          );
+        })}
 
-        {/* 방향 표시 화살표 */}
+        {/* 진행방향 */}
         <text
           x={carWidth / 2}
           y={carHeight / 2 + 1}

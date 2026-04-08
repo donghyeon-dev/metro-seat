@@ -1,206 +1,97 @@
 import type { SeatTemplate, SeatPosition, DoorPosition, LineNumber, CarType } from '@/types';
 
-// 지하철 칸 레이아웃 생성 헬퍼
-// 한국 지하철 기준: 문 4개, 문 사이 구역(section) 3개 + 양 끝 2개 = 총 5구역
-// 구형: 양쪽 각 7석씩 (우선석 포함), 신형: 양쪽 각 6석씩 (좌석 폭이 넓음)
+// 한국 지하철 칸 레이아웃
+// 문 4개, 문 사이 구역(section) 3개 + 양 끝 2개 = 총 5구역
+// 구형: 양쪽 벽면 각 7석 (우선석 포함), 신형: 양쪽 벽면 각 6석
 
-const CAR_WIDTH = 360;
-const CAR_HEIGHT = 120;
-const DOOR_WIDTH = 30;
-const SEAT_SIZE = 14;
+const CAR_WIDTH = 500;
+const CAR_HEIGHT = 130;
+export const SEAT_SIZE = 12;
+const SEAT_GAP = 2;
+const SEAT_STEP = SEAT_SIZE + SEAT_GAP; // 14px per seat slot
+const DOOR_WIDTH = 28;
+const PAD = 8;
 
-// 문 위치 (4개)
-const DOORS: DoorPosition[] = [
-  { id: 'D1', x: 55, y: 0, width: DOOR_WIDTH },
-  { id: 'D2', x: 127, y: 0, width: DOOR_WIDTH },
-  { id: 'D3', x: 199, y: 0, width: DOOR_WIDTH },
-  { id: 'D4', x: 271, y: 0, width: DOOR_WIDTH },
-];
+// 구역별 좌석 수: [끝, 중간, 중간, 중간, 끝]
+const OLD_SECTIONS = [3, 7, 7, 7, 3]; // 구형: 54석 (양면)
+const NEW_SECTIONS = [2, 6, 6, 6, 2]; // 신형: 44석 (양면)
 
-// 구형 차량 좌석 배치 생성
-// 5구역: [문 왼쪽 끝] [문1-문2 사이] [문2-문3 사이] [문3-문4 사이] [문4 오른쪽 끝]
-// 양쪽 끝 구역: 3석 (우선석)
-// 중간 구역: 각 7석
-function generateOldTypeSeats(): SeatPosition[] {
-  const seats: SeatPosition[] = [];
-  const yTop = 18;      // 윗줄 (left side)
-  const yBottom = 88;   // 아랫줄 (right side)
+// 구역 폭 계산
+function sectionWidth(count: number): number {
+  return count * SEAT_STEP - SEAT_GAP;
+}
 
-  // Section 0: 왼쪽 끝 (문1 왼쪽) - 우선석 3개씩
-  const sec0StartX = 10;
-  for (let i = 0; i < 3; i++) {
-    seats.push({
-      id: `S0-L${i + 1}`,
-      section: 0,
-      side: 'left',
-      position: i + 1,
-      type: 'priority',
-      x: sec0StartX + i * (SEAT_SIZE + 2),
-      y: yTop,
-    });
-    seats.push({
-      id: `S0-R${i + 1}`,
-      section: 0,
-      side: 'right',
-      position: i + 1,
-      type: 'priority',
-      x: sec0StartX + i * (SEAT_SIZE + 2),
-      y: yBottom,
-    });
+// 문 위치 계산 (구역 사이에 문 배치)
+function computeDoors(sections: number[]): DoorPosition[] {
+  let x = PAD + sectionWidth(sections[0]);
+  const doors: DoorPosition[] = [];
+  for (let i = 0; i < 4; i++) {
+    doors.push({ id: `D${i + 1}`, x, y: 0, width: DOOR_WIDTH });
+    if (i < 3) {
+      x += DOOR_WIDTH + sectionWidth(sections[i + 1]);
+    }
   }
+  return doors;
+}
 
-  // Section 1~3: 문 사이 구역 - 각 7석씩
-  const sectionStarts = [
-    DOORS[0].x + DOOR_WIDTH + 6,  // 문1-문2 사이
-    DOORS[1].x + DOOR_WIDTH + 6,  // 문2-문3 사이
-    DOORS[2].x + DOOR_WIDTH + 6,  // 문3-문4 사이
-  ];
+// 좌석 생성
+function generateSeats(sections: number[]): SeatPosition[] {
+  const seats: SeatPosition[] = [];
+  const yTop = 16;
+  const yBottom = CAR_HEIGHT - 16 - SEAT_SIZE;
 
-  for (let sec = 0; sec < 3; sec++) {
-    const startX = sectionStarts[sec];
-    for (let i = 0; i < 7; i++) {
-      const seatType = (i < 1 || i >= 6) ? 'priority' : 'normal';
+  let sectionStartX = PAD;
+
+  for (let sec = 0; sec < sections.length; sec++) {
+    const count = sections[sec];
+    const isEnd = sec === 0 || sec === sections.length - 1;
+
+    for (let i = 0; i < count; i++) {
+      const x = sectionStartX + i * SEAT_STEP;
+      // 양 끝 구역은 전체 우선석, 중간 구역은 양 끝 1석씩 우선석
+      const isPriority = isEnd || i === 0 || i === count - 1;
+      const seatType = isPriority ? 'priority' : 'normal';
+
       seats.push({
-        id: `S${sec + 1}-L${i + 1}`,
-        section: sec + 1,
+        id: `S${sec}-L${i + 1}`,
+        section: sec,
         side: 'left',
         position: i + 1,
         type: seatType,
-        x: startX + i * (SEAT_SIZE - 4),
+        x,
         y: yTop,
       });
       seats.push({
-        id: `S${sec + 1}-R${i + 1}`,
-        section: sec + 1,
+        id: `S${sec}-R${i + 1}`,
+        section: sec,
         side: 'right',
         position: i + 1,
         type: seatType,
-        x: startX + i * (SEAT_SIZE - 4),
+        x,
         y: yBottom,
       });
     }
-  }
 
-  // Section 4: 오른쪽 끝 (문4 오른쪽) - 우선석 3개씩
-  const sec4StartX = DOORS[3].x + DOOR_WIDTH + 6;
-  for (let i = 0; i < 3; i++) {
-    seats.push({
-      id: `S4-L${i + 1}`,
-      section: 4,
-      side: 'left',
-      position: i + 1,
-      type: 'priority',
-      x: sec4StartX + i * (SEAT_SIZE + 2),
-      y: yTop,
-    });
-    seats.push({
-      id: `S4-R${i + 1}`,
-      section: 4,
-      side: 'right',
-      position: i + 1,
-      type: 'priority',
-      x: sec4StartX + i * (SEAT_SIZE + 2),
-      y: yBottom,
-    });
+    // 다음 구역 시작: 현재 구역 끝 + 문 폭
+    sectionStartX += sectionWidth(count) + DOOR_WIDTH;
   }
 
   return seats;
 }
 
-// 신형 차량: 좌석이 더 넓고 적음
-function generateNewTypeSeats(): SeatPosition[] {
-  const seats: SeatPosition[] = [];
-  const yTop = 18;
-  const yBottom = 88;
+const OLD_DOORS = computeDoors(OLD_SECTIONS);
+const NEW_DOORS = computeDoors(NEW_SECTIONS);
+const OLD_SEATS = generateSeats(OLD_SECTIONS);
+const NEW_SEATS = generateSeats(NEW_SECTIONS);
 
-  // Section 0: 왼쪽 끝 - 우선석 2개씩
-  const sec0StartX = 14;
-  for (let i = 0; i < 2; i++) {
-    seats.push({
-      id: `S0-L${i + 1}`,
-      section: 0,
-      side: 'left',
-      position: i + 1,
-      type: 'priority',
-      x: sec0StartX + i * (SEAT_SIZE + 4),
-      y: yTop,
-    });
-    seats.push({
-      id: `S0-R${i + 1}`,
-      section: 0,
-      side: 'right',
-      position: i + 1,
-      type: 'priority',
-      x: sec0StartX + i * (SEAT_SIZE + 4),
-      y: yBottom,
-    });
-  }
-
-  // Section 1~3: 문 사이 구역 - 각 6석씩
-  const sectionStarts = [
-    DOORS[0].x + DOOR_WIDTH + 6,
-    DOORS[1].x + DOOR_WIDTH + 6,
-    DOORS[2].x + DOOR_WIDTH + 6,
-  ];
-
-  for (let sec = 0; sec < 3; sec++) {
-    const startX = sectionStarts[sec];
-    for (let i = 0; i < 6; i++) {
-      const seatType = (i < 1 || i >= 5) ? 'priority' : 'normal';
-      seats.push({
-        id: `S${sec + 1}-L${i + 1}`,
-        section: sec + 1,
-        side: 'left',
-        position: i + 1,
-        type: seatType,
-        x: startX + i * (SEAT_SIZE - 2),
-        y: yTop,
-      });
-      seats.push({
-        id: `S${sec + 1}-R${i + 1}`,
-        section: sec + 1,
-        side: 'right',
-        position: i + 1,
-        type: seatType,
-        x: startX + i * (SEAT_SIZE - 2),
-        y: yBottom,
-      });
-    }
-  }
-
-  // Section 4: 오른쪽 끝 - 우선석 2개씩
-  const sec4StartX = DOORS[3].x + DOOR_WIDTH + 6;
-  for (let i = 0; i < 2; i++) {
-    seats.push({
-      id: `S4-L${i + 1}`,
-      section: 4,
-      side: 'left',
-      position: i + 1,
-      type: 'priority',
-      x: sec4StartX + i * (SEAT_SIZE + 4),
-      y: yTop,
-    });
-    seats.push({
-      id: `S4-R${i + 1}`,
-      section: 4,
-      side: 'right',
-      position: i + 1,
-      type: 'priority',
-      x: sec4StartX + i * (SEAT_SIZE + 4),
-      y: yBottom,
-    });
-  }
-
-  return seats;
-}
-
-// 호선별 템플릿 생성
 function createTemplate(
   lineNumber: LineNumber,
   carType: CarType,
   description: string
 ): SeatTemplate {
-  const seats = carType === 'old' ? generateOldTypeSeats() : generateNewTypeSeats();
+  const isOld = carType === 'old';
+  const seats = isOld ? OLD_SEATS : NEW_SEATS;
+  const doors = isOld ? OLD_DOORS : NEW_DOORS;
   return {
     id: `line${lineNumber}-${carType}`,
     lineNumber,
@@ -208,7 +99,7 @@ function createTemplate(
     description,
     totalSeatsPerCar: seats.length,
     seats,
-    doors: DOORS,
+    doors,
     carWidth: CAR_WIDTH,
     carHeight: CAR_HEIGHT,
   };
@@ -234,16 +125,14 @@ export const seatTemplates: SeatTemplate[] = [
   createTemplate(8, 'new', '8호선 신형'),
 ];
 
-// 호선 + 타입으로 템플릿 찾기
 export function getTemplate(lineNumber: LineNumber, carType: CarType): SeatTemplate | undefined {
   return seatTemplates.find(
     (t) => t.lineNumber === lineNumber && t.carType === carType
   );
 }
 
-// 호선별 템플릿 목록
 export function getTemplatesByLine(lineNumber: LineNumber): SeatTemplate[] {
   return seatTemplates.filter((t) => t.lineNumber === lineNumber);
 }
 
-export { CAR_WIDTH, CAR_HEIGHT, SEAT_SIZE };
+export { CAR_WIDTH, CAR_HEIGHT };

@@ -78,7 +78,6 @@ export default function ProvidePage() {
         return;
       }
 
-      const templateId = `line${lineNumber}-${carType}`;
       const direction: Direction = selectedTrain?.updnLine ?? 'up';
 
       const { error: insertError } = await supabase.from('seat_offers').insert({
@@ -89,7 +88,7 @@ export default function ProvidePage() {
         train_number: trainNumber || selectedTrain?.btrainNo || null,
         car_number: selectedCar,
         seat_id: selectedSeat!.id,
-        template_id: templateId,
+        template_id: null,
         exit_station: exitStation!.name,
         exit_station_code: exitStation!.code,
         boarding_station: currentStation!.name,
@@ -290,6 +289,10 @@ export default function ProvidePage() {
             carType={carType}
             selectedCar={selectedCar}
             selectedSeatId={selectedSeat?.id}
+            onCarChange={(carNum) => {
+              setSelectedCar(carNum);
+              setSelectedSeat(null);
+            }}
             onSeatSelect={(carNum, seat) => {
               setSelectedCar(carNum);
               setSelectedSeat(seat);
