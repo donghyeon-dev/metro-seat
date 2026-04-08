@@ -4,7 +4,7 @@ import type { ArrivalInfo, Direction } from '@/types';
 // API Docs: http://data.seoul.go.kr/dataList/OA-12764/F/1/datasetView.do
 // Endpoint: http://swopenAPI.seoul.go.kr/api/subway/{KEY}/json/realtimeStationArrival/0/10/{역명}
 
-const SEOUL_API_BASE = 'https://swopenAPI.seoul.go.kr/api/subway';
+const SEOUL_API_BASE = 'http://swopenAPI.seoul.go.kr/api/subway';
 
 interface SeoulApiResponse {
   realtimeArrivalList?: SeoulArrivalItem[];

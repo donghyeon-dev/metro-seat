@@ -4,7 +4,7 @@ import type { ArrivalInfo } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
-const SEOUL_API_BASE = 'https://swopenAPI.seoul.go.kr/api/subway';
+const SEOUL_API_BASE = 'http://swopenAPI.seoul.go.kr/api/subway';
 
 export async function GET(request: NextRequest) {
   const station = request.nextUrl.searchParams.get('station');
