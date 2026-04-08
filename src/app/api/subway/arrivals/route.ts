@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseArrivalInfo } from '@/lib/subway-api';
 import type { ArrivalInfo } from '@/types';
 
-// Edge Runtime: 한국 CDN 엣지에서 실행되어 서울시 API 접근 가능
-export const runtime = 'edge';
-export const preferredRegion = ['icn1', 'hnd1'];
+export const dynamic = 'force-dynamic';
 
-const SEOUL_API_BASE = 'http://swopenAPI.seoul.go.kr/api/subway';
+const SEOUL_API_BASE = 'https://swopenAPI.seoul.go.kr/api/subway';
 
 export async function GET(request: NextRequest) {
   const station = request.nextUrl.searchParams.get('station');

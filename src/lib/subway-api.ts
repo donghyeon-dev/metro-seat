@@ -4,7 +4,7 @@ import type { ArrivalInfo, Direction } from '@/types';
 // API Docs: http://data.seoul.go.kr/dataList/OA-12764/F/1/datasetView.do
 // Endpoint: http://swopenAPI.seoul.go.kr/api/subway/{KEY}/json/realtimeStationArrival/0/10/{역명}
 
-const SEOUL_API_BASE = 'http://swopenAPI.seoul.go.kr/api/subway';
+const SEOUL_API_BASE = 'https://swopenAPI.seoul.go.kr/api/subway';
 
 interface SeoulApiResponse {
   realtimeArrivalList?: SeoulArrivalItem[];
@@ -87,11 +87,16 @@ export async function fetchArrivals(stationName: string): Promise<ArrivalInfo[]>
   const data: SeoulApiResponse = await res.json();
 
   if (data.errorMessage) {
-    // 데이터 없음 (심야 등)
-    if (data.errorMessage.code === 'INFO-200') {
+    const code = data.errorMessage.code;
+    // INFO-000: 정상 처리 (성공) — 아래에서 realtimeArrivalList 처리
+    if (code === 'INFO-000') {
+      // fall through
+    } else if (code === 'INFO-200') {
+      // 데이터 없음 (심야 등)
       return [];
+    } else {
+      throw new Error(data.errorMessage.message);
     }
-    throw new Error(data.errorMessage.message);
   }
 
   if (!data.realtimeArrivalList) {
