@@ -9,6 +9,7 @@ import SeatMap from '@/components/SeatMap';
 import { useArrivalInfo } from '@/hooks/useArrivalInfo';
 import { getStationsByLine } from '@/data/stations';
 import { createClient } from '@/lib/supabase/client';
+import { ensureProfileExists } from '@/lib/supabase/ensure-profile';
 import type { LineNumber, CarType, Station, ArrivalInfo as ArrivalInfoType, SeatPosition, Direction } from '@/types';
 
 type Step = 'line' | 'station' | 'train' | 'carType' | 'seat' | 'exit' | 'confirm';
@@ -77,6 +78,8 @@ export default function ProvidePage() {
         setSubmitting(false);
         return;
       }
+
+      await ensureProfileExists(supabase, user);
 
       const direction: Direction = selectedTrain?.updnLine ?? 'up';
 

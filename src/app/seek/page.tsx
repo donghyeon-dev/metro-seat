@@ -8,6 +8,7 @@ import CarTypeSelector from '@/components/CarTypeSelector';
 import { useArrivalInfo } from '@/hooks/useArrivalInfo';
 import { useRealtimeOffers } from '@/hooks/useRealtimeOffers';
 import { createClient } from '@/lib/supabase/client';
+import { ensureProfileExists } from '@/lib/supabase/ensure-profile';
 import type { Station, ArrivalInfo as ArrivalInfoType, LineNumber, CarType, SeatPosition } from '@/types';
 import { type SeatStatus } from '@/components/TrainCar';
 
@@ -221,6 +222,8 @@ export default function SeekPage() {
                           const supabase = createClient();
                           const { data: { user } } = await supabase.auth.getUser();
                           if (!user) return;
+
+                          await ensureProfileExists(supabase, user);
 
                           const offer = findOffer(requestedSeat!.car, requestedSeat!.seat.id);
                           if (!offer) return;
