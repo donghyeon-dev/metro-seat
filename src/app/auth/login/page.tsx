@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { ensureProfileExists } from '@/lib/supabase/ensure-profile';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -19,12 +20,7 @@ export default function LoginPage() {
       if (error) throw error;
 
       if (data.user) {
-        // 프로필 생성
-        const displayName = nickname.trim() || `승객${Math.floor(Math.random() * 10000)}`;
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          nickname: displayName,
-        });
+        await ensureProfileExists(supabase, data.user, nickname);
       }
 
       router.push('/');
