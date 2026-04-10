@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import LineSelector from '@/components/LineSelector';
 import CarTypeSelector from '@/components/CarTypeSelector';
 import StationSelector from '@/components/StationSelector';
@@ -17,6 +19,9 @@ type Step = 'line' | 'station' | 'train' | 'carType' | 'seat' | 'exit' | 'confir
 const STEP_ORDER: Step[] = ['line', 'station', 'train', 'carType', 'seat', 'exit', 'confirm'];
 
 export default function ProvidePage() {
+  const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [step, setStep] = useState<Step>('line');
   const [lineNumber, setLineNumber] = useState<LineNumber | null>(null);
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
@@ -29,6 +34,16 @@ export default function ProvidePage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      setAuthChecked(true);
+    }
+    checkAuth();
+  }, []);
 
   const { arrivals, loading, error } = useArrivalInfo({
     stationName: step === 'train' ? currentStation?.name ?? null : null,
@@ -107,6 +122,48 @@ export default function ProvidePage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (!authChecked) {
+    return (
+      <div className="px-4 pt-6">
+        <div className="flex justify-center items-center py-20">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="px-4 pt-6">
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">로그인이 필요합니다</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            자리를 제공하려면 먼저 로그인해주세요
+          </p>
+          <Link
+            href="/auth/login?redirect=/provide"
+            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold active:bg-blue-700 transition-colors"
+          >
+            로그인하기
+          </Link>
+          <button
+            onClick={() => router.push('/')}
+            className="block mx-auto mt-3 text-sm text-gray-400 hover:text-gray-600"
+          >
+            홈으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (submitted) {
