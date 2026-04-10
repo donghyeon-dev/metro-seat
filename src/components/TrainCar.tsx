@@ -29,6 +29,7 @@ export default function TrainCar({
     if (selectedSeatId === seat.id) return SEAT_STATUS_COLORS.mine;
     const status = seatStatuses[seat.id];
     if (status) return SEAT_STATUS_COLORS[status];
+    if (seat.type === 'pregnant') return SEAT_STATUS_COLORS.pregnant;
     if (seat.type === 'priority') return SEAT_STATUS_COLORS.priority;
     return SEAT_STATUS_COLORS.empty;
   }
@@ -44,7 +45,7 @@ export default function TrainCar({
   return (
     <div className="relative">
       {carNumber != null && (
-        <div className="text-center text-xs text-gray-500 mb-1">{carNumber}호차</div>
+        <div className="text-center text-xs text-gray-500 dark:text-gray-400 mb-1">{carNumber}호차</div>
       )}
       <svg
         viewBox={`0 0 ${carWidth} ${carHeight}`}
@@ -59,8 +60,7 @@ export default function TrainCar({
           height={carHeight - 4}
           rx={14}
           ry={14}
-          fill="#F8FAFC"
-          stroke="#CBD5E1"
+          className="fill-[#F8FAFC] dark:fill-[#1F2937] stroke-[#CBD5E1] dark:stroke-[#4B5563]"
           strokeWidth={2}
         />
 
@@ -72,7 +72,7 @@ export default function TrainCar({
               y={2}
               width={door.width}
               height={10}
-              fill="#94A3B8"
+              className="fill-[#94A3B8] dark:fill-[#6B7280]"
               rx={2}
             />
             <rect
@@ -80,17 +80,16 @@ export default function TrainCar({
               y={carHeight - 12}
               width={door.width}
               height={10}
-              fill="#94A3B8"
+              className="fill-[#94A3B8] dark:fill-[#6B7280]"
               rx={2}
             />
-            {/* 문 번호 */}
             <text
               x={door.x + door.width / 2}
               y={carHeight / 2}
               textAnchor="middle"
               dominantBaseline="middle"
               fontSize={7}
-              fill="#CBD5E1"
+              className="fill-[#CBD5E1] dark:fill-[#6B7280]"
             >
               {door.id}
             </text>
@@ -103,7 +102,7 @@ export default function TrainCar({
           y1={carHeight / 2}
           x2={carWidth - 14}
           y2={carHeight / 2}
-          stroke="#E2E8F0"
+          className="stroke-[#E2E8F0] dark:stroke-[#374151]"
           strokeWidth={1}
           strokeDasharray="6 4"
         />
@@ -161,7 +160,7 @@ export default function TrainCar({
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={8}
-          fill="#94A3B8"
+          className="fill-[#94A3B8] dark:fill-[#6B7280]"
         >
           ← 진행방향
         </text>

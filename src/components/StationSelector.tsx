@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { stations } from '@/data/stations';
+import { stations, isTransferStation } from '@/data/stations';
 import type { Station } from '@/types';
+import { LINE_COLORS } from '@/lib/constants';
 
 interface StationSelectorProps {
   placeholder?: string;
@@ -34,20 +35,23 @@ export default function StationSelector({
 
   if (value) {
     return (
-      <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3">
+      <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
         <span
           className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold"
-          style={{ backgroundColor: getLineColor(value.lineNumber) }}
+          style={{ backgroundColor: LINE_COLORS[value.lineNumber as keyof typeof LINE_COLORS] || '#6B7280' }}
         >
           {value.lineNumber}
         </span>
-        <span className="font-medium text-gray-900">{value.name}</span>
+        <span className="font-medium text-gray-900 dark:text-white">{value.name}</span>
+        {isTransferStation(value.name) && (
+          <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">환승</span>
+        )}
         <button
           onClick={() => {
             onChange(null);
             setQuery('');
           }}
-          className="ml-auto text-gray-400 hover:text-gray-600"
+          className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -69,10 +73,10 @@ export default function StationSelector({
         }}
         onFocus={() => setIsOpen(true)}
         placeholder={placeholder}
-        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
       {isOpen && filtered.length > 0 && (
-        <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+        <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
           {filtered.map((station) => (
             <li key={`${station.lineNumber}-${station.code}`}>
               <button
@@ -81,15 +85,18 @@ export default function StationSelector({
                   setIsOpen(false);
                   setQuery('');
                 }}
-                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 active:bg-gray-100"
+                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600"
               >
                 <span
                   className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold flex-shrink-0"
-                  style={{ backgroundColor: getLineColor(station.lineNumber) }}
+                  style={{ backgroundColor: LINE_COLORS[station.lineNumber as keyof typeof LINE_COLORS] || '#6B7280' }}
                 >
                   {station.lineNumber}
                 </span>
-                <span className="text-sm text-gray-900">{station.name}</span>
+                <span className="text-sm text-gray-900 dark:text-white">{station.name}</span>
+                {isTransferStation(station.name) && (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">환승</span>
+                )}
               </button>
             </li>
           ))}
@@ -97,12 +104,4 @@ export default function StationSelector({
       )}
     </div>
   );
-}
-
-function getLineColor(line: number): string {
-  const colors: Record<number, string> = {
-    1: '#0052A4', 2: '#00A84D', 3: '#EF7C1C', 4: '#00A5DE',
-    5: '#996CAC', 6: '#CD7C2F', 7: '#747F00', 8: '#E6186C',
-  };
-  return colors[line] || '#6B7280';
 }
