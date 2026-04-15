@@ -28,7 +28,8 @@ function logEvent(name: EventName, data?: EventData) {
 
   // GA4 연동 (gtag가 있는 경우)
   if (typeof window !== 'undefined' && 'gtag' in window) {
-    (window as Record<string, unknown>).gtag('event', name, data);
+    const w = window as Window & { gtag?: (...args: unknown[]) => void };
+    w.gtag?.('event', name, data);
   }
 }
 
