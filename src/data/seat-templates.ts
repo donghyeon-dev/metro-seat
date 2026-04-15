@@ -34,7 +34,7 @@ function computeDoors(sections: number[]): DoorPosition[] {
   return doors;
 }
 
-// 좌석 생성
+// 좌석 생성 - 우선석/임산부석 정확한 위치 매핑
 function generateSeats(sections: number[]): SeatPosition[] {
   const seats: SeatPosition[] = [];
   const yTop = 16;
@@ -48,9 +48,20 @@ function generateSeats(sections: number[]): SeatPosition[] {
 
     for (let i = 0; i < count; i++) {
       const x = sectionStartX + i * SEAT_STEP;
-      // 양 끝 구역은 전체 우선석, 중간 구역은 양 끝 1석씩 우선석
-      const isPriority = isEnd || i === 0 || i === count - 1;
-      const seatType = isPriority ? 'priority' : 'normal';
+
+      // 좌석 타입 결정:
+      // - 양 끝 구역(sec 0, 4): 전체 우선석
+      // - 중간 구역: 양쪽 끝 1석은 우선석, 문 가까이 첫 석(i===0)은 임산부석
+      let seatType: SeatPosition['type'] = 'normal';
+      if (isEnd) {
+        seatType = 'priority';
+      } else if (i === 0) {
+        // 문 바로 옆 좌석 = 임산부 배려석
+        seatType = 'pregnant';
+      } else if (i === count - 1) {
+        // 반대쪽 문 옆 좌석 = 우선석
+        seatType = 'priority';
+      }
 
       seats.push({
         id: `S${sec}-L${i + 1}`,
@@ -123,6 +134,8 @@ export const seatTemplates: SeatTemplate[] = [
   createTemplate(7, 'new', '7호선 신형'),
   createTemplate(8, 'old', '8호선 구형'),
   createTemplate(8, 'new', '8호선 신형'),
+  createTemplate(9, 'old', '9호선 구형'),
+  createTemplate(9, 'new', '9호선 신형'),
 ];
 
 export function getTemplate(lineNumber: LineNumber, carType: CarType): SeatTemplate | undefined {

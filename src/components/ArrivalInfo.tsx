@@ -30,7 +30,8 @@ export default function ArrivalInfo({
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-red-500">{error}</p>
+        <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+        <p className="text-xs text-gray-400 mt-2">잠시 후 다시 시도해주세요</p>
       </div>
     );
   }
@@ -39,6 +40,7 @@ export default function ArrivalInfo({
     return (
       <div className="text-center py-8">
         <p className="text-sm text-gray-400">현재 도착 예정 열차가 없습니다</p>
+        <p className="text-xs text-gray-400 mt-1">심야시간에는 열차 운행이 없을 수 있습니다</p>
       </div>
     );
   }
@@ -82,7 +84,7 @@ function TrainGroup({
 }) {
   return (
     <div>
-      <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">{title}</h3>
+      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{title}</h3>
       <div className="space-y-2">
         {trains.map((train, i) => {
           const isSelected = selectedTrainNo && train.btrainNo === selectedTrainNo;
@@ -94,8 +96,8 @@ function TrainGroup({
               onClick={() => onSelect?.(train)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                 isSelected
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               <div
@@ -105,17 +107,17 @@ function TrainGroup({
                 {lineNum}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {train.bstatnNm}행
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {train.btrainNo && `열차 ${train.btrainNo} · `}
                   {train.arvlMsg2}
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
                 <span className={`text-sm font-semibold ${
-                  train.arvlMsg2.includes('도착') ? 'text-red-500' : 'text-blue-600'
+                  train.arvlMsg2.includes('도착') ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'
                 }`}>
                   {extractTime(train.arvlMsg2)}
                 </span>

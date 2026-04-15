@@ -429,7 +429,103 @@ export const stations: Station[] = [
   { code: '0815', name: '신흥', lineNumber: 8 },
   { code: '0816', name: '수진', lineNumber: 8 },
   { code: '0817', name: '모란', lineNumber: 8 },
+
+  // ===== 9호선 (개화 → 중앙보훈병원) =====
+  { code: '0901', name: '개화', lineNumber: 9 },
+  { code: '0902', name: '김포공항', lineNumber: 9 },
+  { code: '0903', name: '공항시장', lineNumber: 9 },
+  { code: '0904', name: '신방화', lineNumber: 9 },
+  { code: '0905', name: '마곡나루', lineNumber: 9 },
+  { code: '0906', name: '양천향교', lineNumber: 9 },
+  { code: '0907', name: '가양', lineNumber: 9 },
+  { code: '0908', name: '증미', lineNumber: 9 },
+  { code: '0909', name: '등촌', lineNumber: 9 },
+  { code: '0910', name: '염창', lineNumber: 9 },
+  { code: '0911', name: '신목동', lineNumber: 9 },
+  { code: '0912', name: '선유도', lineNumber: 9 },
+  { code: '0913', name: '당산', lineNumber: 9 },
+  { code: '0914', name: '국회의사당', lineNumber: 9 },
+  { code: '0915', name: '여의도', lineNumber: 9 },
+  { code: '0916', name: '샛강', lineNumber: 9 },
+  { code: '0917', name: '노량진', lineNumber: 9 },
+  { code: '0918', name: '노들', lineNumber: 9 },
+  { code: '0919', name: '흑석', lineNumber: 9 },
+  { code: '0920', name: '동작', lineNumber: 9 },
+  { code: '0921', name: '구반포', lineNumber: 9 },
+  { code: '0922', name: '신반포', lineNumber: 9 },
+  { code: '0923', name: '고속터미널', lineNumber: 9 },
+  { code: '0924', name: '사평', lineNumber: 9 },
+  { code: '0925', name: '신논현', lineNumber: 9 },
+  { code: '0926', name: '언주', lineNumber: 9 },
+  { code: '0927', name: '선정릉', lineNumber: 9 },
+  { code: '0928', name: '삼성중앙', lineNumber: 9 },
+  { code: '0929', name: '봉은사', lineNumber: 9 },
+  { code: '0930', name: '종합운동장', lineNumber: 9 },
+  { code: '0931', name: '삼전', lineNumber: 9 },
+  { code: '0932', name: '석촌고분', lineNumber: 9 },
+  { code: '0933', name: '석촌', lineNumber: 9 },
+  { code: '0934', name: '송파나루', lineNumber: 9 },
+  { code: '0935', name: '한성백제', lineNumber: 9 },
+  { code: '0936', name: '올림픽공원', lineNumber: 9 },
+  { code: '0937', name: '둔촌오륜', lineNumber: 9 },
+  { code: '0938', name: '중앙보훈병원', lineNumber: 9 },
 ];
+
+// 환승역 매핑: 같은 이름이지만 다른 호선인 역들
+export const TRANSFER_STATIONS: Record<string, LineNumber[]> = {
+  '시청': [1, 2],
+  '동대문': [1, 4],
+  '종로3가': [1, 3, 5],
+  '신도림': [1, 2],
+  '신설동': [1, 2],
+  '동묘앞': [1, 6],
+  '창동': [1, 4],
+  '도봉산': [1, 7],
+  '석계': [1, 6],
+  '동대문역사문화공원': [2, 4, 5],
+  '왕십리': [2, 5],
+  '건대입구': [2, 7],
+  '잠실': [2, 8],
+  '종합운동장': [2, 9],
+  '교대': [2, 3],
+  '사당': [2, 4],
+  '합정': [2, 6],
+  '신당': [2, 6],
+  '을지로3가': [2, 3],
+  '을지로4가': [2, 5],
+  '성수': [2],
+  '충정로': [2, 5],
+  '영등포구청': [2, 5],
+  '대림': [2, 7],
+  '까치산': [2, 5],
+  '충무로': [3, 4],
+  '약수': [3, 6],
+  '고속터미널': [3, 7, 9],
+  '오금': [3, 5],
+  '가락시장': [3, 8],
+  '금정': [1, 4],
+  '노원': [4, 7],
+  '삼각지': [4, 6],
+  '동작': [4, 9],
+  '서울역': [1, 4],
+  '김포공항': [5, 9],
+  '여의도': [5, 9],
+  '공덕': [5, 6],
+  '광나루': [5],
+  '천호': [5, 8],
+  '군자': [5, 7],
+  '청구': [5, 6],
+  '연신내': [3, 6],
+  '불광': [3, 6],
+  '태릉입구': [6, 7],
+  '온수': [1, 7],
+  '가산디지털단지': [1, 7],
+  '이수': [4, 7],
+  '노량진': [1, 9],
+  '당산': [2, 9],
+  '석촌': [8, 9],
+  '올림픽공원': [5, 9],
+};
 
 // 호선별 역 목록 가져오기
 export function getStationsByLine(lineNumber: LineNumber): Station[] {
@@ -447,4 +543,15 @@ export function searchStations(query: string, lineNumber?: LineNumber): Station[
         (lineNumber == null || s.lineNumber === lineNumber)
     )
     .slice(0, 20);
+}
+
+// 환승 가능 호선 목록 가져오기
+export function getTransferLines(stationName: string): LineNumber[] {
+  return TRANSFER_STATIONS[stationName] ?? [];
+}
+
+// 환승역인지 확인
+export function isTransferStation(stationName: string): boolean {
+  const lines = TRANSFER_STATIONS[stationName];
+  return !!lines && lines.length >= 2;
 }
