@@ -3,6 +3,7 @@ import BottomNav from "@/components/BottomNav";
 import OfflineBanner from "@/components/OfflineBanner";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -49,12 +50,14 @@ export default function RootLayout({
         style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif' }}
       >
         <ThemeProvider>
-          <OfflineBanner />
-          <main className="flex-1 pb-16 max-w-lg mx-auto w-full">
-            {children}
-          </main>
-          <BottomNav />
-          <ServiceWorkerRegister />
+          <AuthProvider>
+            <OfflineBanner />
+            <main className="flex-1 pb-16 max-w-lg mx-auto w-full">
+              {children}
+            </main>
+            <BottomNav />
+            <ServiceWorkerRegister />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

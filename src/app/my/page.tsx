@@ -3,43 +3,44 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { useAuth } from '@/components/AuthProvider';
 import NotificationBanner from '@/components/NotificationBanner';
 import { SkeletonList } from '@/components/Skeleton';
 import { useTheme } from '@/components/ThemeProvider';
 import type { SeatOffer, SeatRequest, Profile } from '@/types';
 
 export default function MyPage() {
-  const [user, setUser] = useState<Profile | null>(null);
+  const { user: authUser, ready } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [myOffers, setMyOffers] = useState<SeatOffer[]>([]);
   const [myRequests, setMyRequests] = useState<(SeatRequest & { offer?: SeatOffer })[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'offers' | 'requests'>('offers');
   const [pendingRequests, setPendingRequests] = useState<SeatRequest[]>([]);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState('');
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (ready && authUser) loadData();
+    else if (ready) setLoading(false);
+  }, [ready, authUser]);
 
   async function loadData() {
+    if (!authUser) return;
     const supabase = createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (!authUser) {
-      setLoading(false);
-      return;
-    }
-
-    // 프로필
-    const { data: profile } = await supabase
+    const { data: profileData } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', authUser.id)
       .single();
 
-    if (profile) setUser(profile as Profile);
+    if (profileData) {
+      setProfile(profileData as Profile);
+      setNicknameInput(profileData.nickname);
+    }
 
-    // 내 제공 목록
     const { data: offers } = await supabase
       .from('seat_offers')
       .select('*')
@@ -49,7 +50,6 @@ export default function MyPage() {
 
     if (offers) setMyOffers(offers as SeatOffer[]);
 
-    // 내 요청 목록
     const { data: requests } = await supabase
       .from('seat_requests')
       .select('*, offer:seat_offers(*)')
@@ -59,7 +59,6 @@ export default function MyPage() {
 
     if (requests) setMyRequests(requests as (SeatRequest & { offer?: SeatOffer })[]);
 
-    // 내 제공에 대한 대기중 요청
     if (offers && offers.length > 0) {
       const activeOfferIds = (offers as SeatOffer[])
         .filter((o) => o.status === 'available')
@@ -86,11 +85,7 @@ export default function MyPage() {
       .update({ status: accept ? 'accepted' : 'rejected' })
       .eq('id', requestId);
 
-    // 진동 피드백
-    if (accept && navigator.vibrate) {
-      navigator.vibrate(100);
-    }
-
+    if (accept && navigator.vibrate) navigator.vibrate(100);
     setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
   }
 
@@ -106,7 +101,19 @@ export default function MyPage() {
     );
   }
 
-  if (loading) {
+  async function handleSaveNickname() {
+    if (!authUser || !nicknameInput.trim()) return;
+    const supabase = createClient();
+    await supabase
+      .from('profiles')
+      .update({ nickname: nicknameInput.trim() })
+      .eq('id', authUser.id);
+
+    setProfile(prev => prev ? { ...prev, nickname: nicknameInput.trim() } : prev);
+    setEditingNickname(false);
+  }
+
+  if (!ready || loading) {
     return (
       <div className="px-4 pt-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">내 현황</h1>
@@ -116,39 +123,55 @@ export default function MyPage() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="px-4 pt-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">내 현황</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">제공 중인 자리와 요청 현황</p>
-        <div className="text-center py-16">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" className="mx-auto mb-4">
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">로그인 후 이용할 수 있습니다</p>
-          <Link
-            href="/auth/login?redirect=/my"
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold"
-          >
-            시작하기
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="px-4 pt-6">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">{user.nickname}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">내 현황</p>
+        <div className="flex-1">
+          {editingNickname ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={nicknameInput}
+                onChange={(e) => setNicknameInput(e.target.value)}
+                maxLength={20}
+                className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveNickname}
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium"
+              >
+                저장
+              </button>
+              <button
+                onClick={() => setEditingNickname(false)}
+                className="px-3 py-1.5 text-gray-500 text-xs"
+              >
+                취소
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {profile?.nickname || '사용자'}
+                </h1>
+                <button
+                  onClick={() => setEditingNickname(true)}
+                  className="text-xs text-gray-400 underline"
+                >
+                  수정
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                매너 {profile?.manner_score?.toFixed(1) || '0.0'} · 제공 {profile?.total_provides || 0}회
+              </p>
+            </div>
+          )}
         </div>
-        {/* 다크모드 토글 */}
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark')}
-          className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+          className="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
           title={`현재: ${theme === 'system' ? '시스템' : theme === 'dark' ? '다크' : '라이트'}`}
         >
           {theme === 'dark' ? (
@@ -177,7 +200,7 @@ export default function MyPage() {
           <NotificationBanner
             type="request"
             title="좌석 요청이 왔습니다!"
-            message="누군가 내 좌석을 요청했습니다. 좌석 앞에 사람이 있다면 수락해주세요."
+            message="누군가 내 좌석을 요청했습니다."
             actions={[
               {
                 label: '거절',
@@ -198,7 +221,7 @@ export default function MyPage() {
       <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4">
         <button
           onClick={() => setActiveTab('offers')}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'offers'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
               : 'text-gray-500 dark:text-gray-400'
@@ -208,7 +231,7 @@ export default function MyPage() {
         </button>
         <button
           onClick={() => setActiveTab('requests')}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'requests'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
               : 'text-gray-500 dark:text-gray-400'
@@ -225,14 +248,15 @@ export default function MyPage() {
             <div className="text-center py-12 text-gray-400">
               <p className="text-sm">제공한 자리가 없습니다</p>
               <Link href="/provide" className="text-blue-600 dark:text-blue-400 text-sm mt-2 inline-block">
-                자리 제공하기 →
+                자리 제공하기
               </Link>
             </div>
           ) : (
             myOffers.map((offer) => (
-              <div
+              <Link
                 key={offer.id}
-                className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700"
+                href={offer.status === 'available' || offer.status === 'reserved' ? `/session/${offer.id}` : '#'}
+                className="block bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -242,17 +266,16 @@ export default function MyPage() {
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                   <p>좌석: {offer.seat_id} · 하차: {offer.exit_station}</p>
-                  <p>{offer.train_destination}행</p>
                 </div>
                 {offer.status === 'available' && (
                   <button
-                    onClick={() => handleCancelOffer(offer.id)}
+                    onClick={(e) => { e.preventDefault(); handleCancelOffer(offer.id); }}
                     className="mt-3 text-xs text-red-500 underline"
                   >
                     제공 취소
                   </button>
                 )}
-              </div>
+              </Link>
             ))
           )}
         </div>
@@ -265,7 +288,7 @@ export default function MyPage() {
             <div className="text-center py-12 text-gray-400">
               <p className="text-sm">요청한 자리가 없습니다</p>
               <Link href="/seek" className="text-blue-600 dark:text-blue-400 text-sm mt-2 inline-block">
-                자리 찾기 →
+                자리 찾기
               </Link>
             </div>
           ) : (
@@ -306,7 +329,6 @@ function StatusBadge({ status }: { status: string }) {
     completed: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
     cancelled: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
   };
-
   const labels: Record<string, string> = {
     available: '이용가능',
     pending: '대기중',
@@ -316,7 +338,6 @@ function StatusBadge({ status }: { status: string }) {
     completed: '완료',
     cancelled: '취소됨',
   };
-
   return (
     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-500'}`}>
       {labels[status] || status}
