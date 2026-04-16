@@ -1,5 +1,5 @@
 // 호선 번호
-export type LineNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export type LineNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 // 방향
 export type Direction = 'up' | 'down';
@@ -14,7 +14,7 @@ export type SeatOfferStatus = 'available' | 'reserved' | 'completed' | 'cancelle
 export type SeatRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
 
 // 좌석 타입
-export type SeatType = 'normal' | 'priority';
+export type SeatType = 'normal' | 'priority' | 'pregnant';
 
 // 역 정보
 export interface Station {
@@ -105,5 +105,31 @@ export interface ArrivalInfo {
 export interface Profile {
   id: string;
   nickname: string;
+  manner_score: number;
+  total_provides: number;
+  total_seeks: number;
+  created_at: string;
+}
+
+// 매너 평가
+export interface MannerRating {
+  id: string;
+  rater_id: string;
+  rated_id: string;
+  offer_id: string;
+  score: number; // 1~5
+  comment?: string;
+  created_at: string;
+}
+
+// 신고
+export interface Report {
+  id: string;
+  reporter_id: string;
+  reported_id: string;
+  offer_id?: string;
+  reason: 'no_show' | 'fake_offer' | 'harassment' | 'other';
+  description?: string;
+  status: 'pending' | 'reviewed' | 'resolved';
   created_at: string;
 }

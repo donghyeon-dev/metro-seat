@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ensureProfileExists } from '@/lib/supabase/ensure-profile';
 
-export default function LoginPage() {
+function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [nickname, setNickname] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
 
   // 익명 로그인 (MVP용)
   async function handleAnonymousLogin() {
@@ -23,7 +25,7 @@ export default function LoginPage() {
         await ensureProfileExists(supabase, data.user, nickname);
       }
 
-      router.push('/');
+      router.push(redirect || '/');
     } catch (err) {
       console.error('Login failed:', err);
     } finally {
@@ -72,5 +74,17 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="px-4 pt-12 flex justify-center">
+        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

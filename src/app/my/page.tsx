@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import NotificationBanner from '@/components/NotificationBanner';
+import { SkeletonList } from '@/components/Skeleton';
+import { useTheme } from '@/components/ThemeProvider';
 import type { SeatOffer, SeatRequest, Profile } from '@/types';
 
 export default function MyPage() {
@@ -13,6 +15,7 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'offers' | 'requests'>('offers');
   const [pendingRequests, setPendingRequests] = useState<SeatRequest[]>([]);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     loadData();
@@ -83,6 +86,11 @@ export default function MyPage() {
       .update({ status: accept ? 'accepted' : 'rejected' })
       .eq('id', requestId);
 
+    // 진동 피드백
+    if (accept && navigator.vibrate) {
+      navigator.vibrate(100);
+    }
+
     setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
   }
 
@@ -100,8 +108,10 @@ export default function MyPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+      <div className="px-4 pt-6">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">내 현황</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">제공 중인 자리와 요청 현황</p>
+        <SkeletonList count={3} />
       </div>
     );
   }
@@ -109,16 +119,16 @@ export default function MyPage() {
   if (!user) {
     return (
       <div className="px-4 pt-6">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">내 현황</h1>
-        <p className="text-sm text-gray-500 mb-6">제공 중인 자리와 요청 현황</p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">내 현황</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">제공 중인 자리와 요청 현황</p>
         <div className="text-center py-16">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" className="mx-auto mb-4">
             <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
             <circle cx="12" cy="7" r="4" />
           </svg>
-          <p className="text-sm text-gray-500 mb-4">로그인 후 이용할 수 있습니다</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">로그인 후 이용할 수 있습니다</p>
           <Link
-            href="/auth/login"
+            href="/auth/login?redirect=/my"
             className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold"
           >
             시작하기
@@ -132,9 +142,33 @@ export default function MyPage() {
     <div className="px-4 pt-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{user.nickname}</h1>
-          <p className="text-sm text-gray-500">내 현황</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">{user.nickname}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">내 현황</p>
         </div>
+        {/* 다크모드 토글 */}
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark')}
+          className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+          title={`현재: ${theme === 'system' ? '시스템' : theme === 'dark' ? '다크' : '라이트'}`}
+        >
+          {theme === 'dark' ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+            </svg>
+          ) : theme === 'light' ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          )}
+        </button>
       </div>
 
       {/* 대기 중인 요청 알림 */}
@@ -161,11 +195,13 @@ export default function MyPage() {
       ))}
 
       {/* 탭 */}
-      <div className="flex bg-gray-100 rounded-xl p-1 mb-4">
+      <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4">
         <button
           onClick={() => setActiveTab('offers')}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'offers' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            activeTab === 'offers'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+              : 'text-gray-500 dark:text-gray-400'
           }`}
         >
           내 제공 ({myOffers.length})
@@ -173,7 +209,9 @@ export default function MyPage() {
         <button
           onClick={() => setActiveTab('requests')}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'requests' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            activeTab === 'requests'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+              : 'text-gray-500 dark:text-gray-400'
           }`}
         >
           내 요청 ({myRequests.length})
@@ -186,7 +224,7 @@ export default function MyPage() {
           {myOffers.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <p className="text-sm">제공한 자리가 없습니다</p>
-              <Link href="/provide" className="text-blue-600 text-sm mt-2 inline-block">
+              <Link href="/provide" className="text-blue-600 dark:text-blue-400 text-sm mt-2 inline-block">
                 자리 제공하기 →
               </Link>
             </div>
@@ -194,15 +232,15 @@ export default function MyPage() {
             myOffers.map((offer) => (
               <div
                 key={offer.id}
-                className="bg-white rounded-xl p-4 border border-gray-100"
+                className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
                     {offer.line_number}호선 {offer.car_number}호차
                   </span>
                   <StatusBadge status={offer.status} />
                 </div>
-                <div className="text-xs text-gray-500 space-y-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                   <p>좌석: {offer.seat_id} · 하차: {offer.exit_station}</p>
                   <p>{offer.train_destination}행</p>
                 </div>
@@ -226,7 +264,7 @@ export default function MyPage() {
           {myRequests.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <p className="text-sm">요청한 자리가 없습니다</p>
-              <Link href="/seek" className="text-blue-600 text-sm mt-2 inline-block">
+              <Link href="/seek" className="text-blue-600 dark:text-blue-400 text-sm mt-2 inline-block">
                 자리 찾기 →
               </Link>
             </div>
@@ -234,10 +272,10 @@ export default function MyPage() {
             myRequests.map((req) => (
               <div
                 key={req.id}
-                className="bg-white rounded-xl p-4 border border-gray-100"
+                className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
                     {req.offer
                       ? `${req.offer.line_number}호선 ${req.offer.car_number}호차 ${req.offer.seat_id}`
                       : '좌석 정보'}
@@ -245,7 +283,7 @@ export default function MyPage() {
                   <StatusBadge status={req.status} />
                 </div>
                 {req.offer && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {req.offer.exit_station}역 하차 예정
                   </p>
                 )}
@@ -260,13 +298,13 @@ export default function MyPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    available: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    reserved: 'bg-blue-100 text-blue-700',
-    accepted: 'bg-green-100 text-green-700',
-    rejected: 'bg-red-100 text-red-700',
-    completed: 'bg-gray-100 text-gray-700',
-    cancelled: 'bg-gray-100 text-gray-500',
+    available: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    reserved: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    accepted: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    completed: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+    cancelled: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
   };
 
   const labels: Record<string, string> = {
