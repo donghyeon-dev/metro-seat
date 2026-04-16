@@ -5,7 +5,12 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
-import type { SeatOffer, SeatRequest } from '@/types';
+import TrustBadge from '@/components/TrustBadge';
+import MannerRatingModal from '@/components/MannerRatingModal';
+import ReportModal from '@/components/ReportModal';
+import GratitudeModal from '@/components/GratitudeModal';
+import LoginNudge, { useNudge } from '@/components/LoginNudge';
+import type { SeatOffer, SeatRequest, Profile } from '@/types';
 
 const TEMPLATE_MESSAGES = [
   { key: 'nod', label: '고개 끄덕여 주세요', icon: '👋' },
@@ -36,6 +41,13 @@ export default function SessionPage() {
   const [messages, setMessages] = useState<SessionMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProvider, setIsProvider] = useState(false);
+  const [counterpartProfile, setCounterpartProfile] = useState<Pick<Profile, 'id' | 'nickname' | 'manner_score' | 'total_provides'> | null>(null);
+  const [showRating, setShowRating] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [showGratitude, setShowGratitude] = useState(false);
+  const [showNudge, setShowNudge] = useState<'first_complete' | null>(null);
+  const [hasRated, setHasRated] = useState(false);
+  const { shouldShow, dismiss, incrementCompletion } = useNudge();
 
   // Load initial data
   const loadData = useCallback(async () => {
@@ -75,6 +87,30 @@ export default function SessionPage() {
       .order('created_at', { ascending: true });
 
     if (msgData) setMessages(msgData as SessionMessage[]);
+
+    // Load counterpart profile for trust badge
+    if (offerData) {
+      const counterpartId = offerData.provider_id === user.id
+        ? requestData?.find((r: SeatRequest) => r.status === 'accepted' || r.status === 'pending')?.seeker_id
+        : offerData.provider_id;
+      if (counterpartId) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id, nickname, manner_score, total_provides')
+          .eq('id', counterpartId)
+          .single();
+        if (profileData) setCounterpartProfile(profileData);
+      }
+
+      // Check if already rated
+      const { data: existingRating } = await supabase
+        .from('manner_ratings')
+        .select('id')
+        .eq('rater_id', user.id)
+        .eq('offer_id', offerId)
+        .maybeSingle();
+      if (existingRating) setHasRated(true);
+    }
 
     setLoading(false);
   }, [user, offerId, requestIdParam]);
@@ -175,6 +211,12 @@ export default function SessionPage() {
       await supabase.from('seat_requests').update({ status: 'accepted' }).eq('id', myRequest.id);
     }
     if (navigator.vibrate) navigator.vibrate(200);
+
+    // Nudge check
+    const count = incrementCompletion();
+    if (count === 1 && shouldShow('first_complete')) {
+      setTimeout(() => setShowNudge('first_complete'), 1500);
+    }
   }
 
   async function handleSeekerArrived() {
@@ -262,7 +304,33 @@ export default function SessionPage() {
             }`}>
               {isCompleted ? '양도 완료!' : '취소됨'}
             </p>
-            <Link href="/" className="text-sm text-blue-600 dark:text-blue-400">홈으로</Link>
+
+            {isCompleted && !hasRated && (
+              <div className="flex gap-2 justify-center mt-3 mb-3">
+                <button
+                  onClick={() => setShowRating(true)}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded-xl text-sm font-semibold active:bg-yellow-600"
+                >
+                  매너 평가
+                </button>
+                <button
+                  onClick={() => setShowGratitude(true)}
+                  className="px-4 py-2 bg-pink-500 text-white rounded-xl text-sm font-semibold active:bg-pink-600"
+                >
+                  감사 표현
+                </button>
+              </div>
+            )}
+            {isCompleted && hasRated && (
+              <p className="text-xs text-gray-400 mb-2">평가 완료됨</p>
+            )}
+
+            <div className="flex gap-3 justify-center">
+              <Link href="/" className="text-sm text-blue-600 dark:text-blue-400">홈으로</Link>
+              {isCompleted && (
+                <button onClick={() => setShowReport(true)} className="text-sm text-gray-400">신고</button>
+              )}
+            </div>
           </div>
         )}
 
@@ -385,6 +453,15 @@ export default function SessionPage() {
             </button>
           </>
         )}
+
+        <SessionModals
+          show={{ rating: showRating, report: showReport, gratitude: showGratitude }}
+          offerId={offerId} user={user} offer={offer}
+          counterpartProfile={counterpartProfile}
+          hasRated={hasRated} setHasRated={setHasRated}
+          setShowRating={setShowRating} setShowReport={setShowReport} setShowGratitude={setShowGratitude}
+          showNudge={showNudge} setShowNudge={setShowNudge} dismiss={dismiss}
+        />
       </div>
     );
   }
@@ -405,6 +482,13 @@ export default function SessionPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">
           좌석 {offer.seat_id} · {offer.exit_station}역 하차
         </p>
+        {counterpartProfile && (
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <span className="text-xs text-gray-400">제공자</span>
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{counterpartProfile.nickname}</span>
+            <TrustBadge profile={counterpartProfile} />
+          </div>
+        )}
       </div>
 
       {/* 종료된 경우 */}
@@ -417,12 +501,38 @@ export default function SessionPage() {
           }`}>
             {isCompleted ? '자리를 받았어요!' : isCancelled ? '이 자리는 더 이상 이용할 수 없어요' : ''}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
             {isCompleted ? '좋은 이동 되세요' : '다른 사람이 먼저 앉았을 수 있습니다'}
           </p>
-          <Link href="/seek" className="text-sm text-blue-600 dark:text-blue-400">
-            {isCancelled ? '다른 자리 찾기' : '홈으로'}
-          </Link>
+
+          {isCompleted && !hasRated && (
+            <div className="flex gap-2 justify-center mb-3">
+              <button
+                onClick={() => setShowRating(true)}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-xl text-sm font-semibold active:bg-yellow-600"
+              >
+                매너 평가
+              </button>
+              <button
+                onClick={() => setShowGratitude(true)}
+                className="px-4 py-2 bg-pink-500 text-white rounded-xl text-sm font-semibold active:bg-pink-600"
+              >
+                감사 표현
+              </button>
+            </div>
+          )}
+          {isCompleted && hasRated && (
+            <p className="text-xs text-gray-400 mb-2">평가 완료됨</p>
+          )}
+
+          <div className="flex gap-3 justify-center">
+            <Link href="/seek" className="text-sm text-blue-600 dark:text-blue-400">
+              {isCancelled ? '다른 자리 찾기' : '홈으로'}
+            </Link>
+            {isCompleted && (
+              <button onClick={() => setShowReport(true)} className="text-sm text-gray-400">신고</button>
+            )}
+          </div>
         </div>
       )}
 
@@ -534,7 +644,83 @@ export default function SessionPage() {
           )}
         </>
       )}
+
+      <SessionModals
+        show={{ rating: showRating, report: showReport, gratitude: showGratitude }}
+        offerId={offerId} user={user} offer={offer}
+        counterpartProfile={counterpartProfile}
+        hasRated={hasRated} setHasRated={setHasRated}
+        setShowRating={setShowRating} setShowReport={setShowReport} setShowGratitude={setShowGratitude}
+        showNudge={showNudge} setShowNudge={setShowNudge} dismiss={dismiss}
+      />
     </div>
+  );
+}
+
+function SessionModals({
+  show,
+  offerId,
+  user,
+  offer,
+  counterpartProfile,
+  hasRated,
+  setHasRated,
+  setShowRating,
+  setShowReport,
+  setShowGratitude,
+  showNudge,
+  setShowNudge,
+  dismiss,
+}: {
+  show: { rating: boolean; report: boolean; gratitude: boolean };
+  offerId: string;
+  user: { id: string } | null;
+  offer: SeatOffer;
+  counterpartProfile: Pick<Profile, 'id' | 'nickname' | 'manner_score' | 'total_provides'> | null;
+  hasRated: boolean;
+  setHasRated: (v: boolean) => void;
+  setShowRating: (v: boolean) => void;
+  setShowReport: (v: boolean) => void;
+  setShowGratitude: (v: boolean) => void;
+  showNudge: 'first_complete' | null;
+  setShowNudge: (v: 'first_complete' | null) => void;
+  dismiss: (type: 'first_complete') => void;
+}) {
+  if (!user) return null;
+  const counterpartId = counterpartProfile?.id || offer.provider_id;
+
+  return (
+    <>
+      {show.rating && (
+        <MannerRatingModal
+          offerId={offerId}
+          ratedUserId={counterpartId}
+          raterId={user.id}
+          onClose={() => setShowRating(false)}
+          onComplete={() => setHasRated(true)}
+        />
+      )}
+      {show.report && (
+        <ReportModal
+          reporterId={user.id}
+          reportedId={counterpartId}
+          offerId={offerId}
+          onClose={() => setShowReport(false)}
+        />
+      )}
+      {show.gratitude && (
+        <GratitudeModal
+          recipientName={counterpartProfile?.nickname || '사용자'}
+          onClose={() => setShowGratitude(false)}
+        />
+      )}
+      {showNudge && (
+        <LoginNudge
+          type={showNudge}
+          onDismiss={() => { dismiss(showNudge); setShowNudge(null); }}
+        />
+      )}
+    </>
   );
 }
 
