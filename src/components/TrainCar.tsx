@@ -67,36 +67,41 @@ export default function TrainCar({
         />
 
         {/* 문 (좌·우 양쪽 벽에 배치) */}
-        {doors.map((door) => (
-          <g key={door.id}>
-            <rect
-              x={2}
-              y={door.y}
-              width={DOOR_THICKNESS}
-              height={door.width}
-              className="fill-[#94A3B8] dark:fill-[#6B7280]"
-              rx={2}
-            />
-            <rect
-              x={carWidth - 2 - DOOR_THICKNESS}
-              y={door.y}
-              width={DOOR_THICKNESS}
-              height={door.width}
-              className="fill-[#94A3B8] dark:fill-[#6B7280]"
-              rx={2}
-            />
-            <text
-              x={carWidth / 2}
-              y={door.y + door.width / 2}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fontSize={7}
-              className="fill-[#CBD5E1] dark:fill-[#6B7280]"
-            >
-              {door.id}
-            </text>
-          </g>
-        ))}
+        {doors.map((door, idx) => {
+          const n = carNumber ?? 1;
+          const doorLabel = `${n}-${idx + 1}`;
+          return (
+            <g key={door.id}>
+              <rect
+                x={2}
+                y={door.y}
+                width={DOOR_THICKNESS}
+                height={door.width}
+                className="fill-[#94A3B8] dark:fill-[#6B7280]"
+                rx={2}
+              />
+              <rect
+                x={carWidth - 2 - DOOR_THICKNESS}
+                y={door.y}
+                width={DOOR_THICKNESS}
+                height={door.width}
+                className="fill-[#94A3B8] dark:fill-[#6B7280]"
+                rx={2}
+              />
+              <text
+                x={carWidth / 2}
+                y={door.y + door.width / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={9}
+                fontWeight={600}
+                className="fill-[#475569] dark:fill-[#CBD5E1]"
+              >
+                {doorLabel}
+              </text>
+            </g>
+          );
+        })}
 
         {/* 중앙 통로 (세로 점선) */}
         <line
