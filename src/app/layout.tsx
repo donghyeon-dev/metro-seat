@@ -7,13 +7,13 @@ import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "메트로시트 - 지하철 좌석 공유",
-  description: "지하철 빈자리를 미리 확인하고 예약하세요",
+  title: "자리요 — 지금 앉을래요?",
+  description: "하차 예정자의 자리를 호의로 이어받는 지하철 PWA. 자리요는 좌석을 사고팔지 않습니다.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "메트로시트",
+    title: "자리요",
   },
 };
 

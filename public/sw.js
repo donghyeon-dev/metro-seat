@@ -77,7 +77,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || '메트로시트', options)
+    self.registration.showNotification(data.title || '자리요', options)
   );
 });
 

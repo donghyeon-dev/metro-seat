@@ -48,7 +48,7 @@ export default function Home() {
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-2 mb-2">
           <TrainIcon />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">메트로시트</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">자리요</h1>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">지하철 자리를 나눠보세요</p>
       </div>
