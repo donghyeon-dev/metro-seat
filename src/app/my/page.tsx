@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
+import TrustBadge from '@/components/TrustBadge';
 import NotificationBanner from '@/components/NotificationBanner';
 import { SkeletonList } from '@/components/Skeleton';
 import { useTheme } from '@/components/ThemeProvider';
@@ -163,9 +164,9 @@ export default function MyPage() {
                   수정
                 </button>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                매너 {profile?.manner_score?.toFixed(1) || '0.0'} · 제공 {profile?.total_provides || 0}회
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <TrustBadge profile={profile} size="md" />
+              </div>
             </div>
           )}
         </div>
@@ -314,6 +315,58 @@ export default function MyPage() {
             ))
           )}
         </div>
+      )}
+
+      {/* 설정 */}
+      <div className="mt-6 mb-4">
+        <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">설정</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+          <NotificationSetting />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationSetting() {
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
+
+  useEffect(() => {
+    if (typeof Notification === 'undefined') {
+      setPermission('unsupported');
+    } else {
+      setPermission(Notification.permission);
+    }
+  }, []);
+
+  async function requestPermission() {
+    if (typeof Notification === 'undefined') return;
+    const result = await Notification.requestPermission();
+    setPermission(result);
+  }
+
+  return (
+    <div className="flex items-center justify-between px-4 py-3.5">
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">푸시 알림</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {permission === 'granted' ? '알림 허용됨' : permission === 'denied' ? '알림 차단됨 (브라우저 설정에서 변경)' : '요청 도착, 수락 알림 받기'}
+        </p>
+      </div>
+      {permission === 'default' && (
+        <button
+          onClick={requestPermission}
+          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium"
+        >
+          허용
+        </button>
+      )}
+      {permission === 'granted' && (
+        <span className="text-green-500">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </span>
       )}
     </div>
   );

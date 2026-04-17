@@ -11,6 +11,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useArrivalInfo } from '@/hooks/useArrivalInfo';
 import { useRealtimeOffers } from '@/hooks/useRealtimeOffers';
 import { useRecentStations } from '@/hooks/useStationHistory';
+import { useSavedRoutes } from '@/hooks/useSavedRoutes';
 import { createClient } from '@/lib/supabase/client';
 import { ensureProfileExists } from '@/lib/supabase/ensure-profile';
 import type { Station, ArrivalInfo as ArrivalInfoType, LineNumber, CarType, SeatPosition } from '@/types';
@@ -30,6 +31,7 @@ export default function SeekPage() {
   const [requestingOffer, setRequestingOffer] = useState(false);
 
   const { recent, addRecent } = useRecentStations();
+  const { routes: savedRoutes, save: saveRoute, remove: removeRoute } = useSavedRoutes();
 
   const { arrivals, loading, error, refresh } = useArrivalInfo({
     stationName: step === 'arrivals' ? fromStation?.name ?? null : null,
@@ -111,6 +113,42 @@ export default function SeekPage() {
             />
           </div>
 
+          {/* 저장된 경로 */}
+          {savedRoutes.length > 0 && !fromStation && !toStation && (
+            <div>
+              <p className="text-xs text-gray-400 mb-2">저장된 경로</p>
+              <div className="space-y-2">
+                {savedRoutes.map((route) => (
+                  <div key={route.id} className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setFromStation(route.from);
+                        setToStation(route.to);
+                      }}
+                      className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-left active:bg-blue-100 dark:active:bg-blue-900/30"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                      </svg>
+                      <span className="text-xs font-medium text-blue-900 dark:text-blue-300">
+                        {route.from.name} → {route.to.name}
+                      </span>
+                      <span className="text-[10px] text-blue-500 dark:text-blue-400">{route.from.lineNumber}호선</span>
+                    </button>
+                    <button
+                      onClick={() => removeRoute(route.id)}
+                      className="p-1.5 text-gray-300 hover:text-gray-500"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {recent.length > 0 && !fromStation && !toStation && (
             <div>
               <p className="text-xs text-gray-400 mb-2">최근 이용역</p>
@@ -131,13 +169,26 @@ export default function SeekPage() {
             </div>
           )}
 
-          <button
-            disabled={!fromStation || !toStation}
-            onClick={() => setStep('arrivals')}
-            className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-semibold disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:text-gray-500 active:bg-blue-700 transition-colors text-base"
-          >
-            열차 검색
-          </button>
+          <div className="flex gap-2">
+            <button
+              disabled={!fromStation || !toStation}
+              onClick={() => setStep('arrivals')}
+              className="flex-1 py-3.5 bg-blue-600 text-white rounded-xl font-semibold disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:text-gray-500 active:bg-blue-700 transition-colors text-base"
+            >
+              열차 검색
+            </button>
+            {fromStation && toStation && (
+              <button
+                onClick={() => saveRoute(fromStation, toStation)}
+                className="px-4 py-3.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-600 dark:text-gray-300 active:bg-gray-200"
+                title="경로 저장"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
