@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import OfflineBanner from "@/components/OfflineBanner";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
+import Analytics from "@/components/Analytics";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,7 +24,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0052A4",
+  themeColor: "#00A84A",
 };
 
 export default function RootLayout({
@@ -54,9 +56,15 @@ export default function RootLayout({
             <OfflineBanner />
             <main className="flex-1 pb-16 max-w-lg mx-auto w-full">
               {children}
+              <footer className="mt-12 mb-6 px-4 flex gap-4 text-xs text-gray-400 dark:text-gray-500 justify-center">
+                <Link href="/legal/terms" className="hover:underline">이용약관</Link>
+                <Link href="/legal/privacy" className="hover:underline">개인정보</Link>
+                <Link href="/legal/disclaimer" className="hover:underline">주의사항</Link>
+              </footer>
             </main>
             <BottomNav />
             <ServiceWorkerRegister />
+            <Analytics />
           </AuthProvider>
         </ThemeProvider>
       </body>
