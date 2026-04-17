@@ -15,6 +15,8 @@ interface TrainCarProps {
   carNumber?: number;
 }
 
+const DOOR_THICKNESS = 10;
+
 export default function TrainCar({
   template,
   seatStatuses = {},
@@ -49,8 +51,8 @@ export default function TrainCar({
       )}
       <svg
         viewBox={`0 0 ${carWidth} ${carHeight}`}
-        className="w-full h-auto"
-        style={{ maxHeight: '180px' }}
+        className="w-auto h-full mx-auto block"
+        style={{ maxHeight: '70vh', maxWidth: '100%' }}
       >
         {/* 차량 외곽 */}
         <rect
@@ -64,28 +66,28 @@ export default function TrainCar({
           strokeWidth={2}
         />
 
-        {/* 문 (위/아래 양쪽) */}
+        {/* 문 (좌·우 양쪽 벽에 배치) */}
         {doors.map((door) => (
           <g key={door.id}>
             <rect
-              x={door.x}
-              y={2}
-              width={door.width}
-              height={10}
+              x={2}
+              y={door.y}
+              width={DOOR_THICKNESS}
+              height={door.width}
               className="fill-[#94A3B8] dark:fill-[#6B7280]"
               rx={2}
             />
             <rect
-              x={door.x}
-              y={carHeight - 12}
-              width={door.width}
-              height={10}
+              x={carWidth - 2 - DOOR_THICKNESS}
+              y={door.y}
+              width={DOOR_THICKNESS}
+              height={door.width}
               className="fill-[#94A3B8] dark:fill-[#6B7280]"
               rx={2}
             />
             <text
-              x={door.x + door.width / 2}
-              y={carHeight / 2}
+              x={carWidth / 2}
+              y={door.y + door.width / 2}
               textAnchor="middle"
               dominantBaseline="middle"
               fontSize={7}
@@ -96,12 +98,12 @@ export default function TrainCar({
           </g>
         ))}
 
-        {/* 중앙 통로 */}
+        {/* 중앙 통로 (세로 점선) */}
         <line
-          x1={14}
-          y1={carHeight / 2}
-          x2={carWidth - 14}
-          y2={carHeight / 2}
+          x1={carWidth / 2}
+          y1={16}
+          x2={carWidth / 2}
+          y2={carHeight - 16}
           className="stroke-[#E2E8F0] dark:stroke-[#374151]"
           strokeWidth={1}
           strokeDasharray="6 4"
@@ -153,16 +155,16 @@ export default function TrainCar({
           );
         })}
 
-        {/* 진행방향 */}
+        {/* 진행방향 (상단 표시) */}
         <text
           x={carWidth / 2}
-          y={carHeight / 2 + 1}
+          y={10}
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={8}
           className="fill-[#94A3B8] dark:fill-[#6B7280]"
         >
-          ← 진행방향
+          ↑ 진행
         </text>
       </svg>
     </div>
