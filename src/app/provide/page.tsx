@@ -65,7 +65,7 @@ function getErrorMessage(error: unknown) {
 
 export default function ProvidePage() {
   const router = useRouter();
-  const { user, ready } = useAuth();
+  const { user, ready, authError, retry } = useAuth();
   const [step, setStep] = useState<Step>('station');
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
   const [selectedTrain, setSelectedTrain] = useState<ArrivalInfoType | null>(null);
@@ -123,7 +123,9 @@ export default function ProvidePage() {
 
   const stepIndex = STEP_ORDER.indexOf(step);
   const canSubmit = !!user && !!lineNumber && !!selectedSeat && !!exitStation && !!currentStation && !submitting;
-  const authError = ready && !user ? '인증 정보를 준비하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해주세요.' : null;
+  const authBlocker = ready && !user
+    ? (authError ?? '인증 정보를 준비하지 못했습니다. 잠시 후 다시 시도해주세요.')
+    : null;
 
   function goNext() {
     const idx = STEP_ORDER.indexOf(step);
@@ -351,8 +353,17 @@ export default function ProvidePage() {
             </div>
           )}
 
-          {authError && (
-            <p className="mt-3 text-sm text-red-600 text-center">{authError}</p>
+          {authBlocker && (
+            <div className="mt-3 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 p-3">
+              <p className="text-sm text-red-700 dark:text-red-300">{authBlocker}</p>
+              <button
+                type="button"
+                onClick={retry}
+                className="mt-2 text-xs font-medium text-red-700 dark:text-red-300 underline"
+              >
+                다시 시도
+              </button>
+            </div>
           )}
 
           {exitStation && (

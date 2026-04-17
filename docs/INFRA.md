@@ -59,6 +59,16 @@
 
 ---
 
+## 2.5 Supabase 필수 대시보드 설정
+
+**프로덕션 배포 전 반드시 확인** — 누락 시 사용자는 "인증 확인 필요" 에러로 자리 등록 불가.
+
+- [ ] **Authentication > Providers > Anonymous sign-ins 활성화** (기본값 비활성)
+- [ ] Authentication > URL Configuration > Site URL에 `https://jariyo.app` 추가
+- [ ] Authentication > Rate Limits에서 익명 로그인 한도 확인 (남용 방지)
+- [ ] Database > Replication > `seat_offers`, `seat_requests`, `profiles` Realtime 활성
+- [ ] RLS 정책: 익명 사용자가 본인 offer·request는 insert/update 가능, 타인 데이터는 select만 가능
+
 ## 3. 보안·프라이버시
 
 ### 필수
