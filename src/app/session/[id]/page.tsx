@@ -115,6 +115,7 @@ export default function SessionPage() {
     setLoading(false);
   }, [user, offerId, requestIdParam]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 데이터 패칭. SWR/TanStack Query 도입 전까지 예외 (DEV-BACKLOG R-7).
   useEffect(() => {
     if (ready && user) loadData();
   }, [ready, user, loadData]);

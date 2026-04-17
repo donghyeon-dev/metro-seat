@@ -13,6 +13,7 @@ export default function Home() {
   const [activeRequest, setActiveRequest] = useState<(SeatRequest & { offer?: SeatOffer }) | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 데이터 패칭. SWR/TanStack Query 도입 전까지 예외 (DEV-BACKLOG R-7).
   useEffect(() => {
     if (!ready || !user) { setLoaded(true); return; }
     async function loadActive() {
