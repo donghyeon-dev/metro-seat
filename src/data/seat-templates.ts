@@ -1,66 +1,67 @@
 import type { SeatTemplate, SeatPosition, DoorPosition, LineNumber, CarType } from '@/types';
 
-// 한국 지하철 칸 레이아웃
-// 문 4개, 문 사이 구역(section) 3개 + 양 끝 2개 = 총 5구역
-// 구형: 양쪽 벽면 각 7석 (우선석 포함), 신형: 양쪽 벽면 각 6석
+// 한국 지하철 칸 레이아웃 (세로형 — 위→아래)
+// 좌·우 벽면 좌석이 각각 양쪽으로 길게 늘어선 구조.
+// 진행방향은 아래(또는 위)로 표시되며, 문은 좌우 벽에 4개 × 2면 배치.
+// 구역(section): [끝, 중간, 중간, 중간, 끝] = 5구역. 양 끝은 노약자석(우선석) 전용.
+// 임산부석: 서울교통공사 2024.10 기준 "칸당 2석 — 중앙좌석(6~7인)의 양 끝 2자리"
+// 즉 중간 3구역 중 가운데 구역에 좌·우 1석씩 총 2석.
 
-const CAR_WIDTH = 500;
-const CAR_HEIGHT = 130;
-export const SEAT_SIZE = 12;
+const CAR_WIDTH = 160;
+const CAR_HEIGHT = 620;
+export const SEAT_SIZE = 14;
 const SEAT_GAP = 2;
-const SEAT_STEP = SEAT_SIZE + SEAT_GAP; // 14px per seat slot
-const DOOR_WIDTH = 28;
-const PAD = 8;
+const SEAT_STEP = SEAT_SIZE + SEAT_GAP;
+const DOOR_LENGTH = 34;
+const PAD = 16;
 
-// 구역별 좌석 수: [끝, 중간, 중간, 중간, 끝]
-const OLD_SECTIONS = [3, 7, 7, 7, 3]; // 구형: 54석 (양면)
-const NEW_SECTIONS = [2, 6, 6, 6, 2]; // 신형: 44석 (양면)
+const OLD_SECTIONS = [3, 7, 7, 7, 3]; // 구형: 54석
+const NEW_SECTIONS = [2, 6, 6, 6, 2]; // 신형: 44석
 
-// 구역 폭 계산
-function sectionWidth(count: number): number {
+function sectionLength(count: number): number {
   return count * SEAT_STEP - SEAT_GAP;
 }
 
-// 문 위치 계산 (구역 사이에 문 배치)
+// 문은 구역 사이에 배치 (세로축).
 function computeDoors(sections: number[]): DoorPosition[] {
-  let x = PAD + sectionWidth(sections[0]);
+  let y = PAD + sectionLength(sections[0]);
   const doors: DoorPosition[] = [];
   for (let i = 0; i < 4; i++) {
-    doors.push({ id: `D${i + 1}`, x, y: 0, width: DOOR_WIDTH });
+    doors.push({ id: `D${i + 1}`, x: 0, y, width: DOOR_LENGTH });
     if (i < 3) {
-      x += DOOR_WIDTH + sectionWidth(sections[i + 1]);
+      y += DOOR_LENGTH + sectionLength(sections[i + 1]);
     }
   }
   return doors;
 }
 
-// 좌석 생성 - 우선석/임산부석 정확한 위치 매핑
 function generateSeats(sections: number[]): SeatPosition[] {
   const seats: SeatPosition[] = [];
-  const yTop = 16;
-  const yBottom = CAR_HEIGHT - 16 - SEAT_SIZE;
+  const xLeft = 18;
+  const xRight = CAR_WIDTH - 18 - SEAT_SIZE;
 
-  let sectionStartX = PAD;
+  // 임산부석이 배치되는 "중앙 구역" = 중간 3구역 중 가운데 (인덱스 2)
+  const pregnantSectionIndex = 2;
+
+  let sectionStartY = PAD;
 
   for (let sec = 0; sec < sections.length; sec++) {
     const count = sections[sec];
     const isEnd = sec === 0 || sec === sections.length - 1;
+    const isPregnantSection = sec === pregnantSectionIndex;
 
     for (let i = 0; i < count; i++) {
-      const x = sectionStartX + i * SEAT_STEP;
+      const y = sectionStartY + i * SEAT_STEP;
 
-      // 좌석 타입 결정:
-      // - 양 끝 구역(sec 0, 4): 전체 우선석
-      // - 중간 구역: 양쪽 끝 1석은 우선석, 문 가까이 첫 석(i===0)은 임산부석
+      // 좌석 타입:
+      // - 양 끝 구역(노약자석 전용)
+      // - 중앙 구역의 양 끝 2자리 = 임산부 배려석 (서울교통공사 2024 기준)
+      // - 그 외 = 일반석
       let seatType: SeatPosition['type'] = 'normal';
       if (isEnd) {
         seatType = 'priority';
-      } else if (i === 0) {
-        // 문 바로 옆 좌석 = 임산부 배려석
+      } else if (isPregnantSection && (i === 0 || i === count - 1)) {
         seatType = 'pregnant';
-      } else if (i === count - 1) {
-        // 반대쪽 문 옆 좌석 = 우선석
-        seatType = 'priority';
       }
 
       seats.push({
@@ -69,8 +70,8 @@ function generateSeats(sections: number[]): SeatPosition[] {
         side: 'left',
         position: i + 1,
         type: seatType,
-        x,
-        y: yTop,
+        x: xLeft,
+        y,
       });
       seats.push({
         id: `S${sec}-R${i + 1}`,
@@ -78,13 +79,12 @@ function generateSeats(sections: number[]): SeatPosition[] {
         side: 'right',
         position: i + 1,
         type: seatType,
-        x,
-        y: yBottom,
+        x: xRight,
+        y,
       });
     }
 
-    // 다음 구역 시작: 현재 구역 끝 + 문 폭
-    sectionStartX += sectionWidth(count) + DOOR_WIDTH;
+    sectionStartY += sectionLength(count) + DOOR_LENGTH;
   }
 
   return seats;
@@ -116,7 +116,6 @@ function createTemplate(
   };
 }
 
-// 모든 템플릿
 export const seatTemplates: SeatTemplate[] = [
   createTemplate(1, 'old', '1호선 구형'),
   createTemplate(1, 'new', '1호선 신형'),

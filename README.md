@@ -46,6 +46,16 @@ NEXT_PUBLIC_SITE_URL=https://jariyo.app
 
 Supabase 프로젝트 생성 후 `supabase/migrations/001_initial.sql`을 실행하세요.
 
+### Supabase 대시보드 필수 설정
+
+자리요는 익명 로그인 기반이므로 아래 설정이 반드시 필요합니다 (기본값 비활성).
+
+1. **Authentication > Providers > Anonymous sign-ins** 활성화
+2. **Authentication > URL Configuration** 에 배포 URL 추가
+3. **Database > Replication** 에서 `seat_offers`, `seat_requests`, `profiles` Realtime 활성
+
+자세한 체크리스트는 `docs/INFRA.md` 참조.
+
 ## 프로젝트 구조
 
 ```
