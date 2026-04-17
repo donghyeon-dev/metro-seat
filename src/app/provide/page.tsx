@@ -54,6 +54,15 @@ function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error && 'message' in error) {
+    const message = error.message;
+    return typeof message === 'string' ? message : null;
+  }
+  return null;
+}
+
 export default function ProvidePage() {
   const router = useRouter();
   const { user, ready } = useAuth();
@@ -113,6 +122,8 @@ export default function ProvidePage() {
   });
 
   const stepIndex = STEP_ORDER.indexOf(step);
+  const canSubmit = !!user && !!lineNumber && !!selectedSeat && !!exitStation && !!currentStation && !submitting;
+  const authError = ready && !user ? '인증 정보를 준비하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해주세요.' : null;
 
   function goNext() {
     const idx = STEP_ORDER.indexOf(step);
@@ -125,7 +136,16 @@ export default function ProvidePage() {
   }
 
   async function handleSubmit() {
-    if (!user || !lineNumber || !selectedSeat || !exitStation || !currentStation) return;
+    if (!user) {
+      setSubmitError('인증 정보를 준비 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    if (!lineNumber || !selectedSeat || !exitStation || !currentStation) {
+      setSubmitError('현재역, 좌석, 하차역을 모두 선택해주세요.');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError(null);
 
@@ -161,7 +181,8 @@ export default function ProvidePage() {
       router.push(`/session/${offer.id}`);
     } catch (err) {
       console.error('Failed to create seat offer:', err);
-      setSubmitError('등록에 실패했습니다. 다시 시도해주세요.');
+      const message = getErrorMessage(err);
+      setSubmitError(message ? '등록에 실패했습니다. ' + message : '등록에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setSubmitting(false);
     }
@@ -330,6 +351,10 @@ export default function ProvidePage() {
             </div>
           )}
 
+          {authError && (
+            <p className="mt-3 text-sm text-red-600 text-center">{authError}</p>
+          )}
+
           {exitStation && (
             <div className="mt-6">
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 space-y-2">
@@ -345,10 +370,10 @@ export default function ProvidePage() {
 
               <button
                 onClick={handleSubmit}
-                disabled={submitting}
+                disabled={!canSubmit}
                 className="w-full mt-4 py-3.5 bg-blue-600 text-white rounded-xl font-semibold active:bg-blue-700 transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-700 text-base"
               >
-                {submitting ? '등록 중...' : '자리 등록하기'}
+                {submitting ? '등록 중...' : !user ? '인증 확인 필요' : '자리 등록하기'}
               </button>
             </div>
           )}
