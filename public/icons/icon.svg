@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="자리요">
+  <title>자리요</title>
+  <rect width="512" height="512" rx="112" fill="#00A84A"/>
+  <rect x="96" y="128" width="320" height="200" rx="36" fill="#ffffff" opacity="0.95"/>
+  <rect x="96" y="336" width="320" height="36" rx="18" fill="#ffffff" opacity="0.55"/>
+  <circle cx="400" cy="132" r="44" fill="#E63946"/>
+  <circle cx="400" cy="132" r="16" fill="#ffffff"/>
+  <g fill="#111111" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-weight="900" text-anchor="middle">
+    <text x="256" y="448" font-size="96" letter-spacing="-2">자리요</text>
+  </g>
+</svg>
