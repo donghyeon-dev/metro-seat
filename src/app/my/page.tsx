@@ -22,9 +22,11 @@ export default function MyPage() {
   const [nicknameInput, setNicknameInput] = useState('');
   const { theme, setTheme } = useTheme();
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 데이터 패칭. SWR/TanStack Query 도입 전까지 예외 (DEV-BACKLOG R-7).
   useEffect(() => {
     if (ready && authUser) loadData();
     else if (ready) setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadData는 의도적으로 의존성 밖
   }, [ready, authUser]);
 
   async function loadData() {
@@ -331,6 +333,7 @@ export default function MyPage() {
 function NotificationSetting() {
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 Notification API 초기 값 조회. useSyncExternalStore 대상이지만 1회성이라 단순화.
   useEffect(() => {
     if (typeof Notification === 'undefined') {
       setPermission('unsupported');

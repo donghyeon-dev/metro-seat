@@ -1,77 +1,57 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import type { Station } from '@/types';
+import { useLocalStorage } from './useLocalStorage';
 
 const RECENT_KEY = 'metro-seat:recent-stations';
 const FAVORITES_KEY = 'metro-seat:favorite-stations';
 const MAX_RECENT = 10;
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveToStorage<T>(key: string, value: T) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // localStorage full or unavailable
-  }
-}
+const EMPTY: Station[] = [];
 
 export function useRecentStations() {
-  const [recent, setRecent] = useState<Station[]>([]);
+  const [recent, setRecent] = useLocalStorage<Station[]>(RECENT_KEY, EMPTY);
 
-  useEffect(() => {
-    setRecent(loadFromStorage<Station[]>(RECENT_KEY, []));
-  }, []);
-
-  const addRecent = useCallback((station: Station) => {
-    setRecent((prev) => {
-      const filtered = prev.filter(
-        (s) => !(s.code === station.code && s.lineNumber === station.lineNumber)
-      );
-      const next = [station, ...filtered].slice(0, MAX_RECENT);
-      saveToStorage(RECENT_KEY, next);
-      return next;
-    });
-  }, []);
+  const addRecent = useCallback(
+    (station: Station) => {
+      setRecent((prev) => {
+        const filtered = prev.filter(
+          (s) => !(s.code === station.code && s.lineNumber === station.lineNumber),
+        );
+        return [station, ...filtered].slice(0, MAX_RECENT);
+      });
+    },
+    [setRecent],
+  );
 
   return { recent, addRecent };
 }
 
 export function useFavoriteStations() {
-  const [favorites, setFavorites] = useState<Station[]>([]);
+  const [favorites, setFavorites] = useLocalStorage<Station[]>(FAVORITES_KEY, EMPTY);
 
-  useEffect(() => {
-    setFavorites(loadFromStorage<Station[]>(FAVORITES_KEY, []));
-  }, []);
-
-  const toggleFavorite = useCallback((station: Station) => {
-    setFavorites((prev) => {
-      const exists = prev.some(
-        (s) => s.code === station.code && s.lineNumber === station.lineNumber
-      );
-      const next = exists
-        ? prev.filter((s) => !(s.code === station.code && s.lineNumber === station.lineNumber))
-        : [...prev, station];
-      saveToStorage(FAVORITES_KEY, next);
-      return next;
-    });
-  }, []);
+  const toggleFavorite = useCallback(
+    (station: Station) => {
+      setFavorites((prev) => {
+        const exists = prev.some(
+          (s) => s.code === station.code && s.lineNumber === station.lineNumber,
+        );
+        return exists
+          ? prev.filter(
+              (s) => !(s.code === station.code && s.lineNumber === station.lineNumber),
+            )
+          : [...prev, station];
+      });
+    },
+    [setFavorites],
+  );
 
   const isFavorite = useCallback(
     (station: Station) =>
       favorites.some(
-        (s) => s.code === station.code && s.lineNumber === station.lineNumber
+        (s) => s.code === station.code && s.lineNumber === station.lineNumber,
       ),
-    [favorites]
+    [favorites],
   );
 
   return { favorites, toggleFavorite, isFavorite };

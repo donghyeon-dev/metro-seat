@@ -1,47 +1,53 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useLocalStorage } from './useLocalStorage';
 
 type Theme = 'light' | 'dark' | 'system';
 
+function subscribePrefers(callback: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  const mql = window.matchMedia('(prefers-color-scheme: dark)');
+  mql.addEventListener('change', callback);
+  return () => mql.removeEventListener('change', callback);
+}
+
+function getPrefersDark() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function getServerPrefersDark() {
+  return false;
+}
+
 export function useDarkMode() {
-  const [theme, setThemeState] = useState<Theme>('system');
+  const [theme, setTheme] = useLocalStorage<Theme>('theme', 'system');
+  const prefersDark = useSyncExternalStore(
+    subscribePrefers,
+    getPrefersDark,
+    getServerPrefersDark,
+  );
+
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme') as Theme | null;
-    if (saved) {
-      setThemeState(saved);
-    }
-  }, []);
-
-  useEffect(() => {
+    const next = theme === 'system' ? prefersDark : theme === 'dark';
     const root = document.documentElement;
-
-    function applyTheme(dark: boolean) {
-      if (dark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-      setIsDark(dark);
-    }
-
-    if (theme === 'system') {
-      const mql = window.matchMedia('(prefers-color-scheme: dark)');
-      applyTheme(mql.matches);
-      const handler = (e: MediaQueryListEvent) => applyTheme(e.matches);
-      mql.addEventListener('change', handler);
-      return () => mql.removeEventListener('change', handler);
+    if (next) {
+      root.classList.add('dark');
     } else {
-      applyTheme(theme === 'dark');
+      root.classList.remove('dark');
     }
-  }, [theme]);
+    setIsDark((cur) => (cur === next ? cur : next));
+  }, [theme, prefersDark]);
 
-  const setTheme = useCallback((t: Theme) => {
-    setThemeState(t);
-    localStorage.setItem('theme', t);
-  }, []);
+  const setThemeMemo = useCallback(
+    (t: Theme) => {
+      setTheme(t);
+    },
+    [setTheme],
+  );
 
-  return { theme, setTheme, isDark };
+  return { theme, setTheme: setThemeMemo, isDark };
 }
